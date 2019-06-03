@@ -3,7 +3,7 @@ polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE
 
   if (species=="snowcrab") {
     polydir = project.datadirectory("aegis", "polygons")
-    fn = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Snowcrab" ), paste( area, "rdata", sep="." ) )
+    fn = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Snowcrab", paste( area, "rdata", sep="." ) )
     shp = NULL
 
     if (!redo) {
