@@ -24,7 +24,7 @@
   # Access method 1: low level
   # read the data with read.table or read.csv
   polygon.db( DS="map.background", p=p )
-  scotianshelf = read.table( aegis::polygon_file( "test"  ) )
+  scotianshelf = read.table( aegis.polygons::polygon_file( "test"  ) )
   lines( scotianshelf, col="green" )  # plot to confirm we have the right data
 
   # Access method 2: medium
