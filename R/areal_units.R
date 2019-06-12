@@ -1,4 +1,4 @@
-areal_units = function( strata_type="aegis_lattice", resolution=20, resolution_aegis_internal=1,
+areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_internal=1,
   spatial.domain="SSE", proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km", proj4string_planar_km_aegis="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, overlay="groundfish_strata", sa_threshold_km2=0, constraint=NULL, redo=FALSE  ) {
 
@@ -10,7 +10,7 @@ areal_units = function( strata_type="aegis_lattice", resolution=20, resolution_a
     if( !is.null(sppoly) ) return(sppoly)
   }
 
-  if (strata_type == "aegis_lattice") {
+  if (strata_type == "lattice") {
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     # resolution = 20 # in units of crs (km)
