@@ -20,7 +20,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
     if (overlay=="groundfish_strata") {
       gf =  areal_units( strata_type="stratanal_polygons", proj4string_planar_km=proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
-      gf = spTransform(gf, sp::CRS(proj4string_planar_km_aegis) )
+      gf = spTransform(gf, sp::proj4string(sppoly) )
       o = over( sppoly, gf ) # match each datum to an area
       sppoly = sppoly[ which(!is.na(o$StrataID)), ]
 
@@ -31,7 +31,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
       shp = st_simplify(shp)
 
       oo = st_intersection( shp, as( sppoly, "sf") )
-      qq = spTransform( as( oo, "Spatial" ), sp::CRS(proj4string_planar_km_aegis) )
+      qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
       row.names(qq) = row.names(sppoly)
       sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
 
@@ -39,7 +39,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
     if (overlay=="snowcrab") {
       cfaall = polygons_managementarea( species="snowcrab", area="cfaall")
-      cfaall = spTransform(cfaall, sp::CRS(proj4string_planar_km_aegis) )
+      cfaall = spTransform(cfaall, sp::proj4string(sppoly) )
       o = over( sppoly, cfaall ) # match each datum to an area
       sppoly = sppoly[ which(!is.na(o)), ]
 
@@ -50,7 +50,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
       shp = st_simplify(shp)
 
       oo = st_intersection( shp, as( sppoly, "sf") )
-      qq = spTransform( as( oo, "Spatial" ), sp::CRS(proj4string_planar_km_aegis) )
+      qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
       row.names(qq) = row.names(sppoly)
       sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
 
@@ -58,7 +58,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
     if (!is.null (constraint)) {
       cst = SpatialPoints( coords=constraint, CRS("+proj=longlat +datum=WGS84") )
-      cst = spTransform( cst, sp::CRS(proj4string_planar_km_aegis) )
+      cst = spTransform( cst, sp::proj4string(sppoly) )
       oo = over( sppoly, cst )
       sppoly = sppoly[ which(!is.na(oo) ), ]
     }
@@ -82,7 +82,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
       for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
         print(subarea)
         csa = polygons_managementarea( species="snowcrab", area=subarea )
-        csa = spTransform(csa, sp::CRS(proj4string_planar_km_aegis) )
+        csa = spTransform(csa, sp::proj4string(sppoly) )
         csa = as(csa, "sf")
         ooo = st_intersection( csa, csa_all)
         ooo$surfacearea = st_area( ooo )
