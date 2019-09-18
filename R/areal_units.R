@@ -1,6 +1,6 @@
 areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_internal=1,
   spatial.domain="SSE", proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km", proj4string_planar_km_aegis="+proj=utm +ellps=WGS84 +zone=20 +units=km",
-  timeperiod="default", plotit=FALSE, overlay="groundfish_strata", sa_threshold_km2=0, constraint=NULL, redo=FALSE  ) {
+  timeperiod="default", plotit=FALSE, overlay="groundfish_strata", sa_threshold_km2=0, constraint="none", redo=FALSE  ) {
 
   fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste( strata_type, overlay, spatial.domain, resolution, timeperiod, "rdata", sep="." ) )
   sppoly = NULL
@@ -56,7 +56,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
     }
 
-    if (!is.null (constraint)) {
+    if (constraint != "none" ) {
       cst = SpatialPoints( coords=constraint, CRS("+proj=longlat +datum=WGS84") )
       cst = spTransform( cst, sp::proj4string(sppoly) )
       oo = over( sppoly, cst )
