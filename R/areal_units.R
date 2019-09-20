@@ -1,8 +1,10 @@
-areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_internal=1,
+areal_units = function( areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1,
   spatial.domain="SSE", proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km", proj4string_planar_km_aegis="+proj=utm +ellps=WGS84 +zone=20 +units=km",
-  timeperiod="default", plotit=FALSE, overlay="groundfish_strata", sa_threshold_km2=0, constraint="none", redo=FALSE  ) {
+  timeperiod="default", plotit=FALSE, areal_units_overlay="groundfish_strata", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
 
-  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste( strata_type, overlay, spatial.domain, resolution, timeperiod, "rdata", sep="." ) )
+  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ),
+    paste( areal_units_strata_type, areal_units_overlay, spatial.domain, areal_units_resolution_km, timeperiod, "rdata", sep="." )
+  )
   sppoly = NULL
 
   if (!redo) {
@@ -10,23 +12,23 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
     if( !is.null(sppoly) ) return(sppoly)
   }
 
-  if (strata_type == "lattice") {
+  if (areal_units_strata_type == "lattice") {
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
-    # resolution = 20 # in units of crs (km)
-    sppoly = aegis_db_spatial_object( spatial.domain=spatial.domain, proj4string=proj4string_planar_km, resolution=resolution, returntype="SpatialPolygonsDataFrame")
+    # areal_units_resolution_km = 20 # in units of crs (km)
+    sppoly = aegis_db_spatial_object( spatial.domain=spatial.domain, proj4string=proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
     sppoly$StrataID = as.character(sppoly$StrataID)
 
 
-    if (overlay=="groundfish_strata") {
-      gf =  areal_units( strata_type="stratanal_polygons", proj4string_planar_km=proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
+    if (areal_units_overlay=="groundfish_strata") {
+      gf =  areal_units( areal_units_strata_type="stratanal_polygons", proj4string_planar_km=proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
       gf = spTransform(gf, sp::proj4string(sppoly) )
       o = over( sppoly, gf ) # match each datum to an area
       sppoly = sppoly[ which(!is.na(o$StrataID)), ]
 
       shp = as( gf, "sf" )
       shp = st_simplify(shp)
-      shp = st_buffer(shp, resolution_aegis_internal)
+      shp = st_buffer(shp, aegis_internal_resolution_km)
       shp = st_union(shp)
       shp = st_simplify(shp)
 
@@ -37,7 +39,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
     }
 
-    if (overlay=="snowcrab") {
+    if (areal_units_overlay=="snowcrab") {
       cfaall = polygons_managementarea( species="snowcrab", area="cfaall")
       cfaall = spTransform(cfaall, sp::proj4string(sppoly) )
       o = over( sppoly, cfaall ) # match each datum to an area
@@ -45,7 +47,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
       shp = as( cfaall, "sf" )
       shp = st_simplify(shp)
-      shp = st_buffer(shp, resolution_aegis_internal)
+      shp = st_buffer(shp, aegis_internal_resolution_km)
       shp = st_union(shp)
       shp = st_simplify(shp)
 
@@ -56,8 +58,8 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
     }
 
-    if (constraint != "none" ) {
-      cst = SpatialPoints( coords=constraint, CRS("+proj=longlat +datum=WGS84") )
+    if (areal_units_constraint != "none" ) {
+      cst = SpatialPoints( coords=areal_units_constraint, CRS("+proj=longlat +datum=WGS84") )
       cst = spTransform( cst, sp::proj4string(sppoly) )
       oo = over( sppoly, cst )
       sppoly = sppoly[ which(!is.na(oo) ), ]
@@ -75,7 +77,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
     sppoly = sp::spChFIDs( sppoly, as.character(sppoly$StrataID) ) #fix id's
 
 
-    if (overlay=="snowcrab") {
+    if (areal_units_overlay=="snowcrab") {
       # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
       message("Computing surface areas for each subarea ... can be slow if this is your first time")
       csa_all = as(sppoly, "sf")
@@ -102,7 +104,7 @@ areal_units = function( strata_type="lattice", resolution=20, resolution_aegis_i
 
   # ------------------------------------------------
 
-  if (strata_type == "stratanal_polygons") {
+  if (areal_units_strata_type == "stratanal_polygons") {
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
