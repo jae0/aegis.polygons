@@ -1,5 +1,5 @@
 areal_units = function( areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1,
-  spatial.domain="SSE", proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km", proj4string_planar_km_aegis="+proj=utm +ellps=WGS84 +zone=20 +units=km",
+  spatial.domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, areal_units_overlay="groundfish_strata", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
 
   fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ),
@@ -16,12 +16,12 @@ areal_units = function( areal_units_strata_type="lattice", areal_units_resolutio
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     # areal_units_resolution_km = 20 # in units of crs (km)
-    sppoly = aegis_db_spatial_object( spatial.domain=spatial.domain, proj4string=proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
+    sppoly = aegis_db_spatial_object( spatial.domain=spatial.domain, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
     sppoly$StrataID = as.character(sppoly$StrataID)
 
 
     if (areal_units_overlay=="groundfish_strata") {
-      gf =  areal_units( areal_units_strata_type="stratanal_polygons", proj4string_planar_km=proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
+      gf =  areal_units( areal_units_strata_type="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
       gf = spTransform(gf, sp::proj4string(sppoly) )
       o = over( sppoly, gf ) # match each datum to an area
       sppoly = sppoly[ which(!is.na(o$StrataID)), ]
