@@ -1,5 +1,5 @@
 
-polygon.db = function( DS="load", p=NULL, id=NULL, crs="+init=epsg:4326", plotmap=FALSE ) {
+polygon.db = function( DS="load", p=NULL, id=NULL, crs=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
   #\\ create/extract polygons and/or return on a map
   #\\ if crs is passed, default storage/load CRS is assumed lonlat
   #\\ default return value is lon/lat in data frame, also possible to return as a polygon
@@ -20,15 +20,15 @@ polygon.db = function( DS="load", p=NULL, id=NULL, crs="+init=epsg:4326", plotma
     }
     X = read.table (fn)
     colnames( X ) = c("lon", "lat" )
-    if ( as.character(crs) != "+init=epsg:4326" ) {
+    if ( as.character(crs) != projection_proj4string("lonlat_wgs84") ) {
       YY = X
       coordinates(YY) = ~lon+lat
-      proj4string( YY) =  "+init=epsg:4326"
+      proj4string( YY) =  projection_proj4string("lonlat_wgs84")
       Z = spTransform( YY, sp::CRS(crs) )
       X = coordinates(Z)
     }
     if (plotmap) {
-      if ( as.character(crs) != "+init=epsg:4326"  ) {
+      if ( as.character(crs) != projection_proj4string("lonlat_wgs84")  ) {
         polygon.db( DS="map.background", p=p)
       } else {
         u = maps::map( database="worldHires", regions=p$regions, xlim=p$xlim, ylim=p$ylim, fill=FALSE, plot=FALSE )
