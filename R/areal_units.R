@@ -1,16 +1,47 @@
-areal_units = function( areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1,
+areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, auid=NULL,
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, areal_units_overlay="groundfish_strata", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
 
-  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ),
-    paste( areal_units_strata_type, areal_units_overlay, spatial_domain, areal_units_resolution_km, timeperiod, "rdata", sep="." )
-  )
+  if (!is.null(auid)) auid = paste( areal_units_strata_type, areal_units_overlay, spatial_domain, areal_units_resolution_km, timeperiod, "rdata", sep="." )
+  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), auid )
   sppoly = NULL
 
   if (!redo) {
     if (file.exists(fn)) load(fn)
     if( !is.null(sppoly) ) return(sppoly)
   }
+
+  if ( !is.null(p) ) {
+    # designed for operating with aegis data-based polygons adding neighbourhood structure as an attribute .. using only p
+    sppoly = areal_units(
+      spatial_domain=p$spatial_domain,
+      areal_units_proj4string_planar_km=p$areal_units_proj4string_planar_km,
+      areal_units_strata_type=p$areal_units_strata_type,
+      areal_units_resolution_km=p$areal_units_resolution_km,
+      areal_units_overlay= ifelse(!exists("areal_units_overlay", p) || !is.finite(p$areal_units_overlay) || !p$areal_units_overlay, "none", p$areal_units_overlay),
+      areal_units_constraint=ifelse(!exists("areal_units_", p) || !is.finite(p$areal_units_) || !p$areal_units_, "none", p$areal_units_)
+    )
+
+    W.nb = poly2nb(sppoly, row.names=sppoly$StrataID, queen=TRUE)  # slow .. ~1hr?
+    W.remove = which(card(W.nb) == 0)
+
+    if ( length(W.remove) > 0 ) {
+      # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
+      W.keep = which(card(W.nb) > 0)
+      W.nb = nb_remove( W.nb, W.remove )
+      sppoly = sppoly[W.keep,]
+      row.names(sppoly) = as.character(sppoly$StrataID)
+      sppoly = sp::spChFIDs( sppoly, row.names(sppoly) )  #fix id's
+      sppoly$StrataID = factor( as.character(sppoly$StrataID) )
+      sppoly$strata = as.numeric( sppoly$StrataID )
+      sppoly = sppoly[order(sppoly$strata),]
+    }
+
+    attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
+    save(sppoly, file=fn, compress=TRUE)
+    return( sppoly )
+  }
+
 
   if (areal_units_strata_type == "lattice") {
     # res based on grids ... rather than arbitrary polygons
@@ -123,6 +154,8 @@ areal_units = function( areal_units_strata_type="lattice", areal_units_resolutio
     save( sppoly, file=fn, compress=TRUE)
     return( sppoly )
   }
+
+
 
 
 }
