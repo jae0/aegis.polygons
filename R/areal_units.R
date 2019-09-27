@@ -47,47 +47,60 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
   if (areal_units_strata_type == "lattice") {
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
-    # areal_units_resolution_km = 20 # in units of crs (km)
-    sppoly = aegis_db_spatial_object( spatial_domain=spatial_domains, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
+
+    sppoly = aegis_db_spatial_object( spatial_domain=spatial_domain, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
     sppoly$StrataID = as.character(sppoly$StrataID)
 
+    if ( exists("areal_units_overlay", p) ) {
 
-    if (areal_units_overlay=="groundfish_strata") {
-      gf =  areal_units( areal_units_strata_type="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
-      gf = spTransform(gf, sp::proj4string(sppoly) )
-      o = over( sppoly, gf ) # match each datum to an area
-      sppoly = sppoly[ which(!is.na(o$StrataID)), ]
+      if ( grepl("groundfish_strata", p$areal_units_overlay) ) {
+        gf =  areal_units( areal_units_strata_type="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
+        gf = spTransform(gf, sp::proj4string(sppoly) )
+        o = over( sppoly, gf ) # match each datum to an area
+        sppoly = sppoly[ which(!is.na(o$StrataID)), ]
 
-      shp = as( gf, "sf" )
-      shp = st_simplify(shp)
-      shp = st_buffer(shp, aegis_internal_resolution_km)
-      shp = st_union(shp)
-      shp = st_simplify(shp)
+        shp = as( gf, "sf" )
+        shp = st_simplify(shp)
+        shp = st_buffer(shp, aegis_internal_resolution_km)
+        shp = st_union(shp)
+        shp = st_simplify(shp)
 
-      oo = st_intersection( shp, as( sppoly, "sf") )
-      qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
-      row.names(qq) = row.names(sppoly)
-      sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+        oo = st_intersection( shp, as( sppoly, "sf") )
+        qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
+        row.names(qq) = row.names(sppoly)
+        sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
 
-    }
+      }
 
-    if (areal_units_overlay=="snowcrab") {
-      cfaall = polygons_managementarea( species="snowcrab", area="cfaall")
-      cfaall = spTransform(cfaall, sp::proj4string(sppoly) )
-      o = over( sppoly, cfaall ) # match each datum to an area
-      sppoly = sppoly[ which(!is.na(o)), ]
+      if ( grepl("snowcrab_managementareas", p$areal_units_overlay) ) {
 
-      shp = as( cfaall, "sf" )
-      shp = st_simplify(shp)
-      shp = st_buffer(shp, aegis_internal_resolution_km)
-      shp = st_union(shp)
-      shp = st_simplify(shp)
+        cfaall = polygons_managementarea( species="snowcrab", area="cfaall")
+        cfaall = spTransform(cfaall, sp::proj4string(sppoly) )
+        o = over( sppoly, cfaall ) # match each datum to an area
+        sppoly = sppoly[ which(!is.na(o)), ]
 
-      oo = st_intersection( shp, as( sppoly, "sf") )
-      qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
-      row.names(qq) = row.names(sppoly)
-      sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+        shp = as( cfaall, "sf" )
+        shp = st_simplify(shp)
+        shp = st_buffer(shp, aegis_internal_resolution_km)
+        shp = st_union(shp)
+        shp = st_simplify(shp)
 
+        oo = st_intersection( shp, as( sppoly, "sf") )
+        qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
+        row.names(qq) = row.names(sppoly)
+        sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+
+      }
+
+      if ( grepl("coastline", p$areal_units_overlay) ) {
+
+        coastline = as( coastline.db( spatial_domain=spatial_domain, crs=sp::proj4string(sppoly) ), "sf")
+        oo = st_intersection( coastline, as( sppoly, "sf") )
+        qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
+        row.names(qq) = row.names(sppoly)
+        sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+
+      }
     }
 
     if (areal_units_constraint != "none" ) {
