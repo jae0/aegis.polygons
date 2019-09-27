@@ -92,15 +92,16 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
       }
 
-      if ( grepl("coastline", p$areal_units_overlay) ) {
+      # if ( grepl("coastline", p$areal_units_overlay) ) {
 
-        coastline = as( coastline.db( spatial_domain=spatial_domain, crs=sp::proj4string(sppoly) ), "sf")
-        oo = st_intersection( coastline, as( sppoly, "sf") )
-        qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
-        row.names(qq) = row.names(sppoly)
-        sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+      #   coastline = as( coastline.db( spatial_domain=spatial_domain, crs=sp::proj4string(sppoly) ), "sf")
+      #   oo = st_intersection( coastline, as( sppoly, "sf") )
+      #   oo = st_difference( oo, as( sppoly, "sf") )
+      #   qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
+      #   row.names(qq) = row.names(sppoly)
+      #   sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
 
-      }
+      # }
     }
 
     if (areal_units_constraint != "none" ) {
