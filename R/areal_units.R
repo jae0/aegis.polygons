@@ -2,7 +2,8 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, areal_units_overlay="groundfish_strata", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
 
-  if (is.null(auid)) auid = paste( areal_units_strata_type, areal_units_overlay, spatial_domain, areal_units_resolution_km, timeperiod, "rdata", sep="." )
+  if (is.null(auid)) auid = paste( spatial_domain, areal_units_overlay, areal_units_resolution_km,     areal_units_strata_type,  areal_units_constraint, timeperiod, "rdata", sep="." )
+
   fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), auid )
   sppoly = NULL
 
@@ -47,7 +48,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     # areal_units_resolution_km = 20 # in units of crs (km)
-    sppoly = aegis_db_spatial_object( spatial_domain=spatial_domain, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
+    sppoly = aegis_db_spatial_object( spatial_domain=spatial_domains, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
     sppoly$StrataID = as.character(sppoly$StrataID)
 
 
