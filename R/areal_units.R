@@ -20,7 +20,8 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       areal_units_strata_type=p$areal_units_strata_type,
       areal_units_resolution_km=p$areal_units_resolution_km,
       areal_units_overlay= ifelse(!exists("areal_units_overlay", p) || !is.finite(p$areal_units_overlay) || !p$areal_units_overlay, "none", p$areal_units_overlay),
-      areal_units_constraint=ifelse(!exists("areal_units_", p) || !is.finite(p$areal_units_) || !p$areal_units_, "none", p$areal_units_)
+      areal_units_constraint=ifelse(!exists("areal_units_", p) || !is.finite(p$areal_units_) || !p$areal_units_, "none", p$areal_units_),
+      redo=redo
     )
 
     W.nb = poly2nb(sppoly, row.names=sppoly$StrataID, queen=TRUE)  # slow .. ~1hr?
