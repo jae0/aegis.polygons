@@ -6,7 +6,8 @@
 # Create unerlying areal units for modelling of bathymetry, etc using lattice methods via carstm
 
 for ( areal_units_resolution_km in c(10, 20, 25) ) {
-  for ( spatial_domain in c("snowcrab", "SSE")) {
+  # for ( spatial_domain in c("snowcrab", "SSE")) {
+   for ( spatial_domain in c("snowcrab", "SSE")) {
     areal_units_overlay = "snowcrab_managementareas"
     if ( spatial_domain=="SSE") areal_units_overlay = "groundfish_strata"
     p = aegis.bathymetry::bathymetry_parameters(
@@ -22,7 +23,9 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
       areal_units_constraint="none", # set[, c("lon", "lat")],  # to limit to sppoly to only those with data that fall into them
        libs = RLibrary ( "sp", "spdep", "rgeos", "spatialreg", "INLA", "raster", "aegis",  "aegis.polygons", "aegis.bathymetry", "carstm" )
     )
+
     sppoly = areal_units( p=p, redo=TRUE )
+
   }
 
 }
