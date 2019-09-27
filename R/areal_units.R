@@ -1,8 +1,8 @@
 areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, auid=NULL,
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
-  timeperiod="default", plotit=FALSE, areal_units_overlay="groundfish_strata", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
+  timeperiod="default", plotit=FALSE, areal_units_overlay="none", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
 
-  if (is.null(auid)) auid = paste( spatial_domain, areal_units_overlay, areal_units_resolution_km,     areal_units_strata_type,  areal_units_constraint, timeperiod, "rdata", sep="." )
+  if (is.null(auid)) auid = paste( spatial_domain, paste0(areal_units_overlay, collapse="_"), areal_units_resolution_km,     areal_units_strata_type,  areal_units_constraint, timeperiod, "rdata", sep="." )
 
   fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), auid )
   sppoly = NULL
@@ -51,9 +51,8 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     sppoly = aegis_db_spatial_object( spatial_domain=spatial_domain, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
     sppoly$StrataID = as.character(sppoly$StrataID)
 
-    if ( exists("areal_units_overlay", p) ) {
 
-      if ( grepl("groundfish_strata", p$areal_units_overlay) ) {
+      if ( grepl("groundfish_strata", areal_units_overlay) ) {
         gf =  areal_units( areal_units_strata_type="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
         gf = spTransform(gf, sp::proj4string(sppoly) )
         o = over( sppoly, gf ) # match each datum to an area
@@ -72,7 +71,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
       }
 
-      if ( grepl("snowcrab_managementareas", p$areal_units_overlay) ) {
+      if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
 
         cfaall = polygons_managementarea( species="snowcrab", area="cfaall")
         cfaall = spTransform(cfaall, sp::proj4string(sppoly) )
@@ -92,17 +91,6 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
       }
 
-      # if ( grepl("coastline", p$areal_units_overlay) ) {
-
-      #   coastline = as( coastline.db( spatial_domain=spatial_domain, crs=sp::proj4string(sppoly) ), "sf")
-      #   oo = st_intersection( coastline, as( sppoly, "sf") )
-      #   oo = st_difference( oo, as( sppoly, "sf") )
-      #   qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
-      #   row.names(qq) = row.names(sppoly)
-      #   sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
-
-      # }
-    }
 
     if (areal_units_constraint != "none" ) {
       cst = SpatialPoints( coords=areal_units_constraint, CRS("+proj=longlat +datum=WGS84") )
@@ -123,7 +111,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     sppoly = sp::spChFIDs( sppoly, as.character(sppoly$StrataID) ) #fix id's
 
 
-    if (areal_units_overlay=="snowcrab") {
+    if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
       # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
       message("Computing surface areas for each subarea ... can be slow if this is your first time")
       csa_all = as(sppoly, "sf")
