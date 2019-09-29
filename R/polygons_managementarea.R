@@ -13,7 +13,7 @@ polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE
 
     w = list()
     for (su in aegis.polygons::polygon_internal_code(area)) {
-      v = aegis.polygons::polygon.db( id=su  )
+      v = aegis.polygons::polygon.db( polyid=su  )
       vp = Polygon( as.matrix( v ) )
       w = c( w, list( Polygons(list(vp), ID=su )) )
     }

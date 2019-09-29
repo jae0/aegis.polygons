@@ -1,5 +1,5 @@
 
-polygon.db = function( DS="load", p=NULL, id=NULL, crs=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
+polygon.db = function( DS="load", p=NULL, polyid=NULL, crs=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
   #\\ create/extract polygons and/or return on a map
   #\\ if crs is passed, default storage/load CRS is assumed lonlat
   #\\ default return value is lon/lat in data frame, also possible to return as a polygon
@@ -13,7 +13,7 @@ polygon.db = function( DS="load", p=NULL, id=NULL, crs=projection_proj4string("l
 
   if (DS=="load") {
     fn = NULL
-    fn = try( aegis.polygons::polygon_file( id ) )
+    fn = try( aegis.polygons::polygon_file( polyid ) )
     if ( class(fn) %in% "try-error") {
       print( "Something went wrong. See error message below:" )
       print( fn)
