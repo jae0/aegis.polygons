@@ -107,7 +107,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       }
 
     if (class( areal_units_constraint ) %in% c("data.frame", "matrix") ) {
-      cst = SpatialPoints( coords=areal_units_constraint, CRS("+proj=longlat +datum=WGS84") )
+      cst = SpatialPoints( coords=areal_units_constraint, CRS(projection_proj4string("lonlat_wgs84")) )
       cst = spTransform( cst, sp::proj4string(sppoly) )
       oo = over( sppoly, cst )
       sppoly = sppoly[ which(!is.na(oo) ), ]
@@ -160,7 +160,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
     crs0 = proj4string( sppoly )
     row.names(sppoly) = as.character(sppoly$StrataID)
-    sppoly$sa_strata_km2 = gArea(spTransform(sppoly, sp::CRS("+proj=utm +ellps=WGS84 +zone=20 +units=km") ), byid=TRUE) # /10^3/10^3 # km^2  .. planar_crs_km should be in km units
+    sppoly$sa_strata_km2 = gArea(spTransform(sppoly, sp::CRS(projection_proj4string("utm20")) ), byid=TRUE) # /10^3/10^3 # km^2  .. planar_crs_km should be in km units
     sppoly$StrataID = factor(sppoly$StrataID, levels=levels(sppoly$StrataID) ) # make sure in case not all strata are represented in set
     sppoly$strata = as.numeric( sppoly$StrataID )
     sppoly = sp::spChFIDs( sppoly, row.names(sppoly) )  #fix id's
