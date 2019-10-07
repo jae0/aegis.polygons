@@ -32,7 +32,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       areal_units_proj4string_planar_km=p$areal_units_proj4string_planar_km,
       areal_units_strata_type=p$areal_units_strata_type,
       areal_units_resolution_km=p$areal_units_resolution_km,
-      areal_units_overlay= areal_units_overlay,
+      areal_units_overlay= ifelse(exists("areal_units_overlay",p), p$areal_units_overlay, areal_units_overlay),
       areal_units_constraint=areal_units_constraint,
       auid=p$auid,
       redo=redo
@@ -106,8 +106,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
       }
 
-
-    if (areal_units_constraint != "none" ) {
+    if (class( areal_units_constraint ) %in% c("data.frame", "matrix") ) {
       cst = SpatialPoints( coords=areal_units_constraint, CRS("+proj=longlat +datum=WGS84") )
       cst = spTransform( cst, sp::proj4string(sppoly) )
       oo = over( sppoly, cst )
