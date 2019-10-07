@@ -2,9 +2,22 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, areal_units_overlay="none", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
 
-  if (is.null(auid)) auid = paste( spatial_domain, paste0(areal_units_overlay, collapse="_"), areal_units_resolution_km,     areal_units_strata_type,  areal_units_constraint, timeperiod, "rdata", sep="." )
+  if (is.null(auid)) {
+    if ( !is.null(p) ) if (exists("auid", p)) auid = p$auid
+  }
 
-  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), auid )
+  if (is.null(auid)) {
+    auid = paste(
+      spatial_domain,
+      paste0(areal_units_overlay, collapse="_"),
+      areal_units_resolution_km,
+      areal_units_strata_type,
+      timeperiod,
+      sep="_"
+    )
+  }
+
+  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste(auid, "rdata", sep="." ) )
   sppoly = NULL
 
   if (!redo) {
@@ -19,8 +32,9 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       areal_units_proj4string_planar_km=p$areal_units_proj4string_planar_km,
       areal_units_strata_type=p$areal_units_strata_type,
       areal_units_resolution_km=p$areal_units_resolution_km,
-      areal_units_overlay= ifelse(!exists("areal_units_overlay", p), "none", p$areal_units_overlay),
-      areal_units_constraint=ifelse(!exists("areal_units_constraint", p), "none", p$areal_units_constraint),
+      areal_units_overlay= areal_units_overlay,
+      areal_units_constraint=areal_units_constraint,
+      auid=p$auid,
       redo=redo
     )
 
