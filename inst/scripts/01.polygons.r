@@ -20,7 +20,7 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
       areal_units_strata_type = "lattice", # "stmv_fields" to use ageis fields instead of carstm fields ... note variables are not the same
       areal_units_overlay = areal_units_overlay, # additional polygon layers for subsequent analysis such as management area: "snowcrab" or "groundfish"  # for now ..
       areal_units_constraint="none", # set[, c("lon", "lat")],  # to limit to sppoly to only those with data that fall into them
-      libs = RLibrary ( "sp", "spdep", "rgeos", "spatialreg", "INLA", "raster", "aegis",  "aegis.polygons", "aegis.bathymetry", "carstm" )
+      libs = RLibrary ( "sp", "rgeos", "INLA", "raster", "aegis",  "aegis.polygons", "aegis.bathymetry", "carstm" )
     )
 
     sppoly = areal_units( p=p, redo=TRUE )
@@ -69,4 +69,3 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
 
   # Access method 4: one step data and plot it too
   scotianshelf = polygon.db( polyid="test", crs="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p, plotmap=TRUE ) # p contains the extent
-
