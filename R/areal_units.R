@@ -1,6 +1,6 @@
 areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, auid=NULL,
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
-  timeperiod="default", plotit=FALSE, areal_units_overlay="none", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE  ) {
+  timeperiod="default", plotit=FALSE, areal_units_overlay="none", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE, use_stmv_solution=FALSE  ) {
 
   if (is.null(auid)) {
     if ( !is.null(p) ) if (exists("auid", p)) auid = p$auid
@@ -63,7 +63,34 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
 
-    sppoly = aegis_db_spatial_object( spatial_domain=spatial_domain, proj4string=areal_units_proj4string_planar_km, areal_units_resolution_km=areal_units_resolution_km, returntype="SpatialPolygonsDataFrame")
+    if (use_stmv_solution) {
+      sppoly = aegis_db_spatial_object(
+        spatial_domain=spatial_domain,
+        proj4string=areal_units_proj4string_planar_km,
+        areal_units_resolution_km=areal_units_resolution_km,
+        returntype="SpatialPolygonsDataFrame"
+      )
+
+    } else {
+
+      Z = bathymetry.db( DS="aggregated_data" )
+      Z$z = Z$z.mean
+      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
+
+      spdf0 = SpatialPoints(bathymetry[, c("plon", "plat")], proj4string=sp::CRS(proj4string) )
+
+      raster_template = raster(extent(spdf0)) # +1 to increase the area
+      res(raster_template) = areal_units_resolution_km  # in units of crs (which should be in  km)
+      crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
+
+      sppoly = rasterize( bathymetry[, c("plon", "plat")], raster_template, field=Z$z )
+      sppoly = as(sppoly, "SpatialPolygonsDataFrame")
+      sppoly$StrataID = 1:length(sppoly)  # row index
+      row.names(sppoly) = as.character(sppoly$StrataID)
+
+
+    }
+
     sppoly$StrataID = as.character(sppoly$StrataID)
 
 
@@ -88,21 +115,41 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
       if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
 
-        cfaall = polygons_managementarea( species="snowcrab", area="cfaall")
-        cfaall = spTransform(cfaall, sp::proj4string(sppoly) )
-        o = over( sppoly, cfaall ) # match each datum to an area
-        sppoly = sppoly[ which(!is.na(o)), ]
+        pn = spatial_parameters( spatial_domain=spatial_domain )
+        Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km:)
+        spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(proj4string) )
 
-        shp = as( cfaall, "sf" )
+        raster_template = raster(extent(spdf0)) # +1 to increase the area
+        res(raster_template) = pn$pres  # in units of crs (which should be in  km)
+        crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
+
+        ZZ = rasterize( Z[, c("plon", "plat")], raster_template, field=Z$z )
+        ZZ = as(ZZ, "SpatialPolygonsDataFrame")
+        ZZ = as(ZZ, "sf")
+        ZZ = st_buffer(ZZ, aegis_internal_resolution_km)
+        ZZ = st_simplify(ZZ)
+        ZZ = st_union( ZZ)
+        ZZ = st_simplify(ZZ)
+
+        shp = polygons_managementarea( species="snowcrab", area="cfaall")
+        shp = spTransform(shp, sp::proj4string(sppoly) )
+        shp = as( shp, "sf" )
         shp = st_simplify(shp)
         shp = st_buffer(shp, aegis_internal_resolution_km)
         shp = st_union(shp)
         shp = st_simplify(shp)
 
-        oo = st_intersection( shp, as( sppoly, "sf") )
-        qq = spTransform( as( oo, "Spatial" ), sp::proj4string(sppoly) )
-        row.names(qq) = row.names(sppoly)
-        sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+        # domain = sf::st_join(shp, ZZ, join = st_intersects)
+        # domain = sf::st_join(shp, as( sppoly, "sf"), join = st_intersects)
+
+        domain = st_intersection( shp, ZZ )
+        domain = st_union(domain)
+        domain = st_simplify(domain)
+
+        domain = spTransform(as(domain, "Spatial"), sp::proj4string(sppoly) )
+
+        sppoly = intersect( domain, sppoly )
+        # sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
 
       }
 
