@@ -116,7 +116,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
 
         pn = spatial_parameters( spatial_domain=spatial_domain )
-        Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km:)
+        Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)
         spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(proj4string) )
 
         raster_template = raster(extent(spdf0)) # +1 to increase the area
@@ -149,7 +149,13 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
         domain = spTransform(as(domain, "Spatial"), sp::proj4string(sppoly) )
 
         sppoly = intersect( domain, sppoly )
-        # sppoly = SpatialPolygonsDataFrame( qq, data=sppoly@data, match.ID=TRUE )
+
+        sppoly$StrataID = factor( as.character(sppoly$StrataID) )
+        sppoly$strata = as.numeric( sppoly$StrataID )
+        sppoly = sppoly[order(sppoly$strata),]
+        row.names(sppoly) = as.character(sppoly$StrataID)
+        attr(sppoly, "region.id") = as.character( sppoly@data$StrataID )
+        sppoly = sp::spChFIDs( sppoly, as.character(sppoly$StrataID) ) #fix id's
 
       }
 
