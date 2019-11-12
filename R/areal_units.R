@@ -62,7 +62,6 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
   if (areal_units_strata_type == "lattice") {
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
-
     if (use_stmv_solution) {
       sppoly = aegis_db_spatial_object(
         spatial_domain=spatial_domain,
@@ -72,18 +71,19 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       )
 
     } else {
-
-      Z = bathymetry.db( DS="aggregated_data" )
+      pn = spatial_parameters( spatial_domain=spatial_domain )  # geeneric defaults
+      Z = bathymetry.db( p=pn, DS="aggregated_data" )
       Z$z = Z$z.mean
+      Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)  # should not be required but to make sure
       Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
 
-      spdf0 = SpatialPoints(bathymetry[, c("plon", "plat")], proj4string=sp::CRS(proj4string) )
-
+      spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(pn$aegis_proj4string_planar_km) )
+      require(raster)
       raster_template = raster(extent(spdf0)) # +1 to increase the area
       res(raster_template) = areal_units_resolution_km  # in units of crs (which should be in  km)
       crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
 
-      sppoly = rasterize( bathymetry[, c("plon", "plat")], raster_template, field=Z$z )
+      sppoly = rasterize( Z[, c("plon", "plat")], raster_template, field=Z$z )
       sppoly = as(sppoly, "SpatialPolygonsDataFrame")
       sppoly$StrataID = 1:length(sppoly)  # row index
       row.names(sppoly) = as.character(sppoly$StrataID)
@@ -117,10 +117,12 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
         pn = spatial_parameters( spatial_domain=spatial_domain )
         Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)
-        spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(proj4string) )
+        spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(pn$aegis_proj4string_planar_km) )
+
+        require(raster)
 
         raster_template = raster(extent(spdf0)) # +1 to increase the area
-        res(raster_template) = pn$pres  # in units of crs (which should be in  km)
+        res(raster_template) = pn$pres/10  # in units of crs (which should be in 1 km .. so 100m)
         crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
 
         ZZ = rasterize( Z[, c("plon", "plat")], raster_template, field=Z$z )
