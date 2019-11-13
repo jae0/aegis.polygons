@@ -17,10 +17,10 @@
 
     # match each datum to an area
     o = over( pts, sppoly)
-    Y$StrataID = as.character( o$StrataID )
+    Y$AUID = as.character( o$AUID )
 
     sppoly = spTransform(sppoly, sp::CRS(planar_crs_km) )  # "+proj=utm +ellps=WGS84 +zone=20 +units=km"
-    sppoly$sa_strata_km2 = gArea(sppoly, byid=TRUE) # km^2  .. planar_crs_km should be in km units
+    sppoly$au_sa_km2 = gArea(sppoly, byid=TRUE) # km^2  .. planar_crs_km should be in km units
 
     Y = merge(Y, slot(sppoly, "data"), all.x=TRUE, all.y=FALSE)
 
@@ -36,10 +36,10 @@
     st$stratum.depth = NULL
 
 
-    Y = merge(Y, st, by.x="StrataID", by.y="stratum.strat", all.x=TRUE, all.y=FALSE, suffixes=c("", ".gsstratum") )
+    Y = merge(Y, st, by.x="AUID", by.y="stratum.strat", all.x=TRUE, all.y=FALSE, suffixes=c("", ".gsstratum") )
 
     if (plotdata) {
-      nomatches = which(is.na(Y$StrataID))
+      nomatches = which(is.na(Y$AUID))
       plot(sppoly)
       plot( pts, pch=20, col="green", add=TRUE)
       if (length(nomatches) >0) {

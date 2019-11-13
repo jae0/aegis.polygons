@@ -13,19 +13,19 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
       shapefilename = "GB_STRATA_VDC"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
       o1 = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
-      names(o1) = "StrataID"
+      names(o1) = "AUID"
 
-      todrop = which(o1$StrataID %in% c("5Z1", "5Z2") ) # drop as they are also in o2
+      todrop = which(o1$AUID %in% c("5Z1", "5Z2") ) # drop as they are also in o2
       o1 = o1[-todrop,]
 
       shapefilename = "GF_SUMMER_STRATA_VDC"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
       o2 = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
-      names(o2) = "StrataID"
+      names(o2) = "AUID"
 
       groundfish_strata <- rbind(o1, o2)
 
-      attr(groundfish_strata, "region.id") = as.character( groundfish_strata@data$StrataID )
+      attr(groundfish_strata, "region.id") = as.character( groundfish_strata@data$AUID )
 
       # plot(groundfish_strata)
       return(groundfish_strata)
@@ -35,10 +35,10 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
       shapefilename = "MaritimesRegionEcosystemAssessmentStrata"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
       groundfish_strata = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
-      names(groundfish_strata) = "StrataID"
+      names(groundfish_strata) = "AUID"
 
       # plot(groundfish_strata)
-      attr(groundfish_strata, "region.id") = as.character( groundfish_strata@data$StrataID )
+      attr(groundfish_strata, "region.id") = as.character( groundfish_strata@data$AUID )
 
       return( groundfish_strata)
     }
@@ -88,7 +88,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
 
     if (timeperiod=="post2014") {
       sppoly = maritimes_groundfish_strata( timeperiod=timeperiod, returntype="polygons" )
-      W.nb = spdep::poly2nb(sppoly, row.names=rownames(sppoly@data$StrataID ) )
+      W.nb = spdep::poly2nb(sppoly, row.names=rownames(sppoly@data$AUID ) )
       if (0){
         # polys look ok
         plot(sppoly)

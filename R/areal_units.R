@@ -1,23 +1,23 @@
-areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, auid=NULL,
+areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, areal_unit_type=NULL,
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, areal_units_overlay="none", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE, use_stmv_solution=FALSE  ) {
 
-  if (is.null(auid)) {
-    if ( !is.null(p) ) if (exists("auid", p)) auid = p$auid
+  if (is.null(areal_unit_type)) {
+    if ( !is.null(p) ) if (exists("areal_unit_type", p)) areal_unit_type = p$areal_unit_type
   }
 
-  if (is.null(auid)) {
-    auid = paste(
+  if (is.null(areal_unit_type)) {
+    areal_unit_type = paste(
       spatial_domain,
       paste0(areal_units_overlay, collapse="_"),
       areal_units_resolution_km,
-      areal_units_strata_type,
+      areal_units_source,
       timeperiod,
       sep="_"
     )
   }
 
-  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste(auid, "rdata", sep="." ) )
+  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste(areal_unit_type, "rdata", sep="." ) )
   sppoly = NULL
 
   if (!redo) {
@@ -30,15 +30,15 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     sppoly = areal_units(
       spatial_domain=p$spatial_domain,
       areal_units_proj4string_planar_km=p$areal_units_proj4string_planar_km,
-      areal_units_strata_type=p$areal_units_strata_type,
+      areal_units_source=p$areal_units_source,
       areal_units_resolution_km=p$areal_units_resolution_km,
       areal_units_overlay= ifelse(exists("areal_units_overlay",p), p$areal_units_overlay, areal_units_overlay),
       areal_units_constraint=areal_units_constraint,
-      auid=p$auid,
+      areal_unit_type=p$areal_unit_type,
       redo=redo
     )
 
-    W.nb = poly2nb(sppoly, row.names=sppoly$StrataID, queen=TRUE)  # slow .. ~1hr?
+    W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE)  # slow .. ~1hr?
     W.remove = which(card(W.nb) == 0)
 
     if ( length(W.remove) > 0 ) {
@@ -46,11 +46,9 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       W.keep = which(card(W.nb) > 0)
       W.nb = nb_remove( W.nb, W.remove )
       sppoly = sppoly[W.keep,]
-      row.names(sppoly) = as.character(sppoly$StrataID)
+      row.names(sppoly) = sppoly$AUID
       sppoly = sp::spChFIDs( sppoly, row.names(sppoly) )  #fix id's
-      sppoly$StrataID = factor( as.character(sppoly$StrataID) )
-      sppoly$strata = as.numeric( sppoly$StrataID )
-      sppoly = sppoly[order(sppoly$strata),]
+      sppoly = sppoly[order(sppoly$AUID),]
     }
 
     attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
@@ -59,7 +57,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
   }
 
 
-  if (areal_units_strata_type == "lattice") {
+  if (areal_units_source == "lattice") {
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     if (use_stmv_solution) {
@@ -73,7 +71,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
     } else {
       pn = spatial_parameters( spatial_domain=spatial_domain )  # geeneric defaults
       Z = bathymetry.db( p=pn, DS="aggregated_data" )
-      Z$z = Z$z.mean
+      names(Z)[which(names(Z)=="z.mean" )] = "z"
       Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)  # should not be required but to make sure
       Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
 
@@ -85,20 +83,18 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
       sppoly = rasterize( Z[, c("plon", "plat")], raster_template, field=Z$z )
       sppoly = as(sppoly, "SpatialPolygonsDataFrame")
-      sppoly$StrataID = 1:length(sppoly)  # row index
-      row.names(sppoly) = as.character(sppoly$StrataID)
+      sppoly$AUID = as.character(1:length(sppoly))  # row index
+      row.names(sppoly) = sppoly$AUID
 
 
     }
 
-    sppoly$StrataID = as.character(sppoly$StrataID)
-
 
       if ( grepl("groundfish_strata", areal_units_overlay) ) {
-        gf =  areal_units( areal_units_strata_type="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
+        gf =  areal_units( areal_units_source="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
         gf = spTransform(gf, sp::proj4string(sppoly) )
         o = over( sppoly, gf ) # match each datum to an area
-        sppoly = sppoly[ which(!is.na(o$StrataID)), ]
+        sppoly = sppoly[ which(!is.na(o$AUID)), ]
 
         shp = as( gf, "sf" )
         shp = st_simplify(shp)
@@ -152,12 +148,10 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
         sppoly = intersect( domain, sppoly )
 
-        sppoly$StrataID = factor( as.character(sppoly$StrataID) )
-        sppoly$strata = as.numeric( sppoly$StrataID )
-        sppoly = sppoly[order(sppoly$strata),]
-        row.names(sppoly) = as.character(sppoly$StrataID)
-        attr(sppoly, "region.id") = as.character( sppoly@data$StrataID )
-        sppoly = sp::spChFIDs( sppoly, as.character(sppoly$StrataID) ) #fix id's
+        sppoly = sppoly[order( sppoly$AUID ),]
+        row.names(sppoly) = sppoly$AUID
+        attr(sppoly, "region.id") =  sppoly$AUID
+        sppoly = sp::spChFIDs( sppoly, sppoly$AUID  ) #fix id's
 
       }
 
@@ -168,16 +162,14 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
       sppoly = sppoly[ which(!is.na(oo) ), ]
     }
 
-    sppoly$sa_strata_km2 = gArea(sppoly, byid=TRUE)
-    toremove = which(sppoly$sa_strata_km2 < sa_threshold_km2)
+    sppoly$au_sa_km2 = gArea(sppoly, byid=TRUE)
+    toremove = which(sppoly$au_sa_km2 < sa_threshold_km2)
     if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
-    sppoly$StrataID = factor( as.character(sppoly$StrataID) )
-    sppoly$strata = as.numeric( sppoly$StrataID )
-    sppoly = sppoly[order(sppoly$strata),]
-    row.names(sppoly) = as.character(sppoly$StrataID)
-    attr(sppoly, "region.id") = as.character( sppoly@data$StrataID )
-    sppoly = sp::spChFIDs( sppoly, as.character(sppoly$StrataID) ) #fix id's
+    sppoly = sppoly[order(sppoly$AUID),]
+    row.names(sppoly) = sppoly$AUID
+    attr(sppoly, "region.id") = sppoly$AUID
+    sppoly = sp::spChFIDs( sppoly, sppoly$AUID ) #fix id's
 
 
     if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
@@ -193,7 +185,7 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
         ooo$surfacearea = st_area( ooo )
         vn = paste(subarea, "surfacearea", sep="_")
         sppoly[[ vn ]] = 0
-        j = match( ooo$StrataID, sppoly$StrataID )
+        j = match( ooo$AUID, sppoly$AUID )
         if (length(j) > 0)  sppoly[[ vn ]][j] = ooo$surfacearea
       }
 
@@ -207,19 +199,18 @@ areal_units = function( p=NULL, areal_units_strata_type="lattice", areal_units_r
 
   # ------------------------------------------------
 
-  if (areal_units_strata_type == "stratanal_polygons") {
+  if (areal_units_source == "stratanal_polygons") {
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
     sppoly = maritimes_groundfish_strata( timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ), returntype="polygons" )
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
     crs0 = proj4string( sppoly )
-    row.names(sppoly) = as.character(sppoly$StrataID)
-    sppoly$sa_strata_km2 = gArea(spTransform(sppoly, sp::CRS(projection_proj4string("utm20")) ), byid=TRUE) # /10^3/10^3 # km^2  .. planar_crs_km should be in km units
-    sppoly$StrataID = factor(sppoly$StrataID, levels=levels(sppoly$StrataID) ) # make sure in case not all strata are represented in set
-    sppoly$strata = as.numeric( sppoly$StrataID )
+    sppoly$AUID = as.character(sppoly$AUID)
+    row.names(sppoly) = sppoly$AUID
+    sppoly$au_sa_km2 = gArea(spTransform(sppoly, sp::CRS(projection_proj4string("utm20")) ), byid=TRUE) # /10^3/10^3 # km^2  .. planar_crs_km should be in km units
     sppoly = sp::spChFIDs( sppoly, row.names(sppoly) )  #fix id's
-    sppoly = sppoly[order(sppoly$strata),]
+    sppoly = sppoly[order(sppoly$AUID),]
     sppoly = spTransform(sppoly, sp::CRS(crs0) )  # for plot in UTM ccordinates .. default isobath and coastlines
 
     if (plotit) plot(sppoly)
