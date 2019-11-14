@@ -1,4 +1,4 @@
-areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, areal_unit_type=NULL,
+areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolution_km=20, aegis_internal_resolution_km=1, areal_units_fn=NULL,
   spatial_domain="SSE", areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km",
   timeperiod="default", plotit=FALSE, areal_units_overlay="none", sa_threshold_km2=0, areal_units_constraint="none", redo=FALSE, use_stmv_solution=FALSE  ) {
 
@@ -6,7 +6,7 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
     areal_units_source="lattice"
     areal_units_resolution_km=20
     aegis_internal_resolution_km=1
-    areal_unit_type=NULL
+    areal_units_fn=NULL
     spatial_domain="SSE"
     areal_units_proj4string_planar_km="+proj=utm +ellps=WGS84 +zone=20 +units=km"
     timeperiod="default"
@@ -23,12 +23,12 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
     areal_units_resolution_km=p$areal_units_resolution_km
     areal_units_overlay= ifelse(exists("areal_units_overlay",p), p$areal_units_overlay, areal_units_overlay)
     areal_units_constraint=areal_units_constraint
-    areal_unit_type=p$areal_unit_type
+    areal_units_fn=p$areal_units_fn
 
   }
 
-  if (is.null(areal_unit_type)) {
-    areal_unit_type = paste(
+  if (is.null(areal_units_fn)) {
+    areal_units_fn = paste(
       spatial_domain,
       paste0(areal_units_overlay, collapse="_"),
       areal_units_resolution_km,
@@ -46,11 +46,11 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
     if (exists("areal_units_resolution_km", p)) areal_units_resolution_km=p$areal_units_resolution_km
     if (exists("areal_units_overlay", p)) areal_units_overlay=p$areal_units_overlay
     if (exists("areal_units_constraint", p)) areal_units_constraint=areal_units_constraint
-    if (exists("areal_unit_type", p)) areal_unit_type=p$areal_unit_type
+    if (exists("areal_units_fn", p)) areal_units_fn=p$areal_units_fn
   }
 
 
-  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste(areal_unit_type, "rdata", sep="." ) )
+  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste(areal_units_fn, "rdata", sep="." ) )
   sppoly = NULL
 
   if (!redo) {
@@ -92,7 +92,21 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
 
 
     if ( grepl("groundfish_strata", areal_units_overlay) ) {
-      gf =  areal_units( areal_units_source="stratanal_polygons", areal_units_proj4string_planar_km=areal_units_proj4string_planar_km, timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ) )
+
+      timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod )
+
+      ### next section is the same as "stratanal polygons" below .. copied here to avoid recursion
+      ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
+      # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
+      # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
+      gf = maritimes_groundfish_strata( timeperiod=timeperiod, returntype="polygons" )
+      # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
+      crs0 = proj4string( gf )
+      gf$AUID = as.character(gf$AUID)
+      row.names(gf) = gf$AUID
+      gf$au_sa_km2 = gArea(spTransform(gf, sp::CRS(projection_proj4string("utm20")) ), byid=TRUE) # /10^3/10^3 # km^2  .. planar_crs_km should be in km units
+      gf = sp::spChFIDs( gf, row.names(gf) )  #fix id's
+      gf = gf[order(gf$AUID),]
       gf = spTransform(gf, sp::proj4string(sppoly) )
       o = over( sppoly, gf ) # match each datum to an area
       sppoly = sppoly[ which(!is.na(o$AUID)), ]
