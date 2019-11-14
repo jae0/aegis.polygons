@@ -161,7 +161,7 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
 
       domain = spTransform(as(domain, "Spatial"), sp::proj4string(sppoly) )
 
-      sppoly = rgeos::gIntersection( domain, sppoly, byid = TRUE  )
+      sppoly = raster::intersect( domain, sppoly  )
 
       sppoly = sppoly[order( sppoly$AUID ),]
       row.names(sppoly) = sppoly$AUID
