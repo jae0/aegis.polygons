@@ -175,6 +175,13 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
       cst = spTransform( cst, sp::proj4string(sppoly) )
       oo = over( sppoly, cst )
       sppoly = sppoly[ which(!is.na(oo) ), ]
+      if (exists("areal_units_constraint_nmin", p)) {
+        vv = over( cst, sppoly  )
+        ww = tapply( rep(1, nrow(vv)), vv$AUID, sum, na.rm=T )
+        good = which(ww > p$areal_units_constraint_nmin )
+        tags = names(ww)[good]
+        sppoly = sppoly[ sppoly$AUID %in% tags, ]
+      }
     }
 
     sppoly$au_sa_km2 = gArea(sppoly, byid=TRUE)
