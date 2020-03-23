@@ -244,7 +244,7 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
     sp::proj4string(spset) = projection_proj4string("lonlat_wgs84")
 
     # crs_planar = sp::CRS(projection_proj4string("utm20"))
-    crs_planar = sp::CRS( p$aegis_proj4string_planar_km )
+    crs_planar = sp::CRS( aegis_proj4string_planar_km )
 
     spset = spTransform( spset, crs_planar )  # in km
 
@@ -253,11 +253,11 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
 
     require(INLA)
 
-    if (!exists("areal_units_resolution_km", p)) p$areal_units_resolution_km = max( diff(range( locs[,1])), diff(range( locs[,2]) )) / 25  # in absence of range estimate take 1/10 of domain size
+    if (!exists("areal_units_resolution_km", p)) areal_units_resolution_km = max( diff(range( locs[,1])), diff(range( locs[,2]) )) / 25  # in absence of range estimate take 1/10 of domain size
 
-    max.edge = c( 0.5, 5 ) * p$areal_units_resolution_km #   # max size of a triange (in, out) proportion of dist.max
-    bnd.offset = c( 0.1, 1 ) * p$areal_units_resolution_km  # how much to extend inside and outside of boundary: proportion of dist.max
-    cutoff = c( 0.5, 5 )*p$areal_units_resolution_km # min distance allowed between points: proportion of dist.max
+    max.edge = c( 0.5, 5 ) * areal_units_resolution_km #   # max size of a triange (in, out) proportion of dist.max
+    bnd.offset = c( 0.1, 1 ) * areal_units_resolution_km  # how much to extend inside and outside of boundary: proportion of dist.max
+    cutoff = c( 0.5, 5 )*areal_units_resolution_km # min distance allowed between points: proportion of dist.max
     spbuffer = 5
     hull_multiplier = 6
 
@@ -324,14 +324,16 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
 
     sppoly[, "au_sa_km2"] = st_area(sppoly)
 
-    plot(st_geometry(sppoly))
-    plot(sppoly[,"au_sa_km2"])
+    # plot(st_geometry(sppoly))
+    # plot(sppoly[,"au_sa_km2"])
 
-    sa_threshold_km2 = p$pres^2 * 10
     units( sa_threshold_km2 ) = units( sppoly$au_sa_km2 )
     toremove = which(sppoly$au_sa_km2 < sa_threshold_km2)
 
     if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
+
+    sppoly[, "AUID"] = as.character( 1:nrow(sppoly) )
+    row.names(sppoly) = sppoly$AUID
 
     sppoly = as(sppoly, "Spatial")
 
