@@ -27,16 +27,6 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
 
   }
 
-  if (is.null(areal_units_fn)) {
-    areal_units_fn = paste(
-      spatial_domain,
-      paste0(areal_units_overlay, collapse="_"),
-      areal_units_resolution_km,
-      areal_units_source,
-      timeperiod,
-      sep="_"
-    )
-  }
 
   if ( !is.null(p) ) {
     # designed for operating with aegis data-based polygons adding neighbourhood structure as an attribute .. using only p and override everything
@@ -47,6 +37,17 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
     if (exists("areal_units_overlay", p)) areal_units_overlay=p$areal_units_overlay
     if (exists("areal_units_constraint", p)) areal_units_constraint=areal_units_constraint
     if (exists("areal_units_fn", p)) areal_units_fn=p$areal_units_fn
+  }
+
+  if (is.null(areal_units_fn)) {
+    areal_units_fn = paste(
+      spatial_domain,
+      paste0(areal_units_overlay, collapse="_"),
+      areal_units_resolution_km,
+      areal_units_source,
+      timeperiod,
+      sep="_"
+    )
   }
 
 
