@@ -231,11 +231,11 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
   }
 
 
-  if (areal_units_source == "groundfish_polygons_inla_mesh") {
+  if (areal_units_source %in% c("groundfish_polygons_inla_mesh",  "groundfish_polygons_tesselation") ) {
 
     ## method 1: Voronoi triangulation
     spset = survey.db( DS="set.base", p=p )
-    spset = lonlat2planar(spset, aegis_proj4string_planar_km)  # should not be required but to make sure
+    spset = lonlat2planar(spset, areal_units_proj4string_planar_km)  # should not be required but to make sure
     spset = geo_subset( spatial_domain=spatial_domain, Z=spset )
 
     spset$AUID = spset$id
@@ -244,57 +244,56 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
     sp::proj4string(spset) = projection_proj4string("lonlat_wgs84")
 
     # crs_planar = sp::CRS(projection_proj4string("utm20"))
-    crs_planar = sp::CRS( aegis_proj4string_planar_km )
-
+    crs_planar = sp::CRS( areal_units_proj4string_planar_km )
     spset = spTransform( spset, crs_planar )  # in km
-
     locs = coordinates( spset )
     locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
-    require(INLA)
+    spbuffer = 5
+    hull_multiplier = 6
+    bnd = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
+    bnd = list( Polygons(list( Polygon( as.matrix( bnd ) )), ID="boundary" ))
+    bnd = SpatialPolygons( bnd, proj4string=sp::CRS(projection_proj4string("utm20")) )
+    bnd = gBuffer( gUnaryUnion( gBuffer( bnd, width=spbuffer, byid=TRUE) ), width=spbuffer)
+          # plot(bnd)
 
     if (!exists("areal_units_resolution_km", p)) areal_units_resolution_km = max( diff(range( locs[,1])), diff(range( locs[,2]) )) / 25  # in absence of range estimate take 1/10 of domain size
 
-    max.edge = c( 0.5, 5 ) * areal_units_resolution_km #   # max size of a triange (in, out) proportion of dist.max
-    bnd.offset = c( 0.1, 1 ) * areal_units_resolution_km  # how much to extend inside and outside of boundary: proportion of dist.max
-    cutoff = c( 0.5, 5 )*areal_units_resolution_km # min distance allowed between points: proportion of dist.max
-    spbuffer = 5
-    hull_multiplier = 6
+    if (areal_units_source == "groundfish_polygons_tesselation" ) {
 
-    v = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
-    # if ( any( !is.finite(v) )) next()
-    w = list( Polygons(list( Polygon( as.matrix( v ) )), ID="boundary" ))
+      spmesh = aegis_mesh( SPDF=spset, resolution=areal_units_resolution_km, output_type="grid.count" )  # coarse grid representation
+      spmesh = aegis_mesh( SPDF=spmesh, resolution=areal_units_resolution_km, output_type="polygons" )  # voroni tesslation and delaunay triagulation
 
-    bnd = SpatialPolygons( w, proj4string=sp::CRS(projection_proj4string("utm20")) )
-    bnd = gBuffer( gUnaryUnion( gBuffer( bnd, width=spbuffer, byid=TRUE) ), width=spbuffer)
-          # plot(bnd)
-    # bnd_inla = st_coordinates( as(bnd, "sf") )
-    # bnd_inla =  inla.mesh.segment(bnd_inla[,c(1,2)])
+    }
 
-    spmesh = inla.mesh.2d (
-      loc=locs,
-      max.edge = max.edge ,
-      offset = bnd.offset,
-      cutoff = cutoff #,
-      # boundary = bnd_inla
-    )
+    if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
 
-    # convert to sp*
-    spmesh = SpatialPolygonsDataFrame(
-      Sr = SpatialPolygons( lapply(
-        1:nrow(spmesh$graph$tv),
-        function(x) {
-          tv = spmesh$graph$tv[x, , drop = TRUE]
-          Polygons(list(Polygon(
-            spmesh$loc[tv[c(1, 3, 2, 1)], 1:2, drop = FALSE])),
-          ID = x)
-        }
+      require(INLA)
+      spmesh = inla.mesh.2d (
+        loc=locs,
+        max.edge = c( 0.5, 5 ) * areal_units_resolution_km,  #   # max size of a triange (in, out)
+        offset = c( 0.1, 1 ) * areal_units_resolution_km , # how much to extend inside and outside of boundary,
+        cutoff = c( 0.5, 5 ) * areal_units_resolution_km # min distance allowed between points #,
+        # boundary =  inla.mesh.segment(st_coordinates( as(bnd, "sf") )[,c(1,2)])
+      )
+
+      # convert to sp*
+      spmesh = SpatialPolygonsDataFrame(
+        Sr = SpatialPolygons( lapply(
+          1:nrow(spmesh$graph$tv),
+          function(x) {
+            tv = spmesh$graph$tv[x, , drop = TRUE]
+            Polygons(list(Polygon(
+              spmesh$loc[tv[c(1, 3, 2, 1)], 1:2, drop = FALSE])),
+            ID = x)
+          }
+          ),
+        proj4string = crs_planar
         ),
-      proj4string = crs_planar
-      ),
-      data = as.data.frame(spmesh$graph$tv[, c(1, 3, 2), drop = FALSE]),
-      match.ID = FALSE
-    )
+        data = as.data.frame(spmesh$graph$tv[, c(1, 3, 2), drop = FALSE]),
+        match.ID = FALSE
+      )
+    }
 
     require(aegis.coastline)
     coast = (
@@ -321,23 +320,18 @@ areal_units = function( p=NULL, areal_units_source="lattice", areal_units_resolu
       %>% st_cast( "POLYGON" )
     )
 
-
     sppoly[, "au_sa_km2"] = st_area(sppoly)
-
     # plot(st_geometry(sppoly))
     # plot(sppoly[,"au_sa_km2"])
-
     units( sa_threshold_km2 ) = units( sppoly$au_sa_km2 )
     toremove = which(sppoly$au_sa_km2 < sa_threshold_km2)
-
     if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
-
     sppoly[, "AUID"] = as.character( 1:nrow(sppoly) )
     row.names(sppoly) = sppoly$AUID
-
     sppoly = as(sppoly, "Spatial")
 
   }
+
 
 
   # ------------------------------------------------
