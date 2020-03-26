@@ -106,11 +106,11 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
     spbuffer = 5
     hull_multiplier = 6
-    bnd = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
-    bnd = list( Polygons(list( Polygon( as.matrix( bnd ) )), ID="boundary" ))
-    bnd = SpatialPolygons( bnd, proj4string=sp::CRS(projection_proj4string("utm20")) )
-    bnd = gBuffer( gUnaryUnion( gBuffer( bnd, width=spbuffer, byid=TRUE) ), width=spbuffer)
-          # plot(bnd)
+    data_boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
+    data_boundary = list( Polygons(list( Polygon( as.matrix( data_boundary ) )), ID="boundary" ))
+    data_boundary = SpatialPolygons( data_boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
+    data_boundary = gBuffer( gUnaryUnion( gBuffer( data_boundary, width=spbuffer, byid=TRUE) ), width=spbuffer)
+          # plot(data_boundary)
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
       areal_units_tessilation_factor = ifelse( exists("areal_units_tessilation_factor", p), p$areal_units_tessilation_factor, 5 )  # reduction for initial pass
@@ -131,7 +131,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
         max.edge = c( 0.5, 5 ) * areal_units_resolution_km,  #   # max size of a triange (in, out)
         offset = c( 0.1, 1 ) * areal_units_resolution_km , # how much to extend inside and outside of boundary,
         cutoff = c( 0.5, 5 ) * areal_units_resolution_km # min distance allowed between points #,
-        # boundary =  inla.mesh.segment(st_coordinates( as(bnd, "sf") )[,c(1,2)])
+        # boundary =  inla.mesh.segment(st_coordinates( as(data_boundary, "sf") )[,c(1,2)])
       )
 
       # convert to sp*
@@ -162,7 +162,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
     )
 
     sppoly = (
-      as(bnd, "sf")
+      as(data_boundary, "sf")
       %>% st_union()
       %>% st_buffer(0.1)
       %>% st_difference( coast)
@@ -196,11 +196,11 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
     spbuffer = 5
     hull_multiplier = 6
-    bnd = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
-    bnd = list( Polygons(list( Polygon( as.matrix( bnd ) )), ID="boundary" ))
-    bnd = SpatialPolygons( bnd, proj4string=sp::CRS(projection_proj4string("utm20")) )
-    bnd = gBuffer( gUnaryUnion( gBuffer( bnd, width=spbuffer, byid=TRUE) ), width=spbuffer)
-          # plot(bnd)
+    data_boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
+    data_boundary = list( Polygons(list( Polygon( as.matrix( data_boundary ) )), ID="boundary" ))
+    data_boundary = SpatialPolygons( data_boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
+    data_boundary = gBuffer( gUnaryUnion( gBuffer( data_boundary, width=spbuffer, byid=TRUE) ), width=spbuffer)
+          # plot(data_boundary)
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
       areal_units_tessilation_factor = ifelse( exists("areal_units_tessilation_factor", p), p$areal_units_tessilation_factor, 5 )  # reduction for initial pass
@@ -221,7 +221,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
         max.edge = c( 0.5, 5 ) * areal_units_resolution_km,  #   # max size of a triange (in, out)
         offset = c( 0.1, 1 ) * areal_units_resolution_km , # how much to extend inside and outside of boundary,
         cutoff = c( 0.5, 5 ) * areal_units_resolution_km # min distance allowed between points #,
-        # boundary =  inla.mesh.segment(st_coordinates( as(bnd, "sf") )[,c(1,2)])
+        # boundary =  inla.mesh.segment(st_coordinates( as(data_boundary, "sf") )[,c(1,2)])
       )
 
       # convert to sp*
@@ -252,7 +252,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
     )
 
     sppoly = (
-      as(bnd, "sf")
+      as(data_boundary, "sf")
       %>% st_union()
       %>% st_buffer(0.1)
       %>% st_difference( coast)
@@ -327,7 +327,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
     rasterized_depths = as(rasterized_depths, "SpatialPolygonsDataFrame")
     rasterized_depths = (
       as(rasterized_depths, "sf")
-      %>% st_buffer(aegis_internal_resolution_km)
+      %>% st_buffer(0.1 )
       %>% st_simplify()
       %>% st_union( )
       %>% st_simplify()
@@ -337,7 +337,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
       as( polygons_managementarea( species="snowcrab", area="cfaall") , "sf" )
       %>% st_transform( st_crs(sppoly) )
       %>% st_simplify()
-      %>% st_buffer(aegis_internal_resolution_km)
+      %>% st_buffer(0.1)
       %>% st_union()
       %>% st_simplify()
     )
@@ -348,11 +348,32 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
       %>%  st_simplify()
     )
 
+    require(aegis.coastline)
+    landmask = (
+        as( coastline.db( p=p, DS="eastcoast_gadm" ), "sf")
+        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
+        %>% st_simplify()
+        %>% st_buffer(0.1)
+        %>% st_union()
+    )
+
     sppoly = (
       st_intersection( sppoly, domain )
+      %>% st_simplify()
+      %>% st_buffer(0.1)
       %>%  st_collection_extract("POLYGON")
       %>%  st_cast( "POLYGON" )
     )
+
+    # must be done separately
+    sppoly = (
+      st_difference( sppoly, landmask )
+      %>% st_simplify()
+      %>% st_buffer(0.1)
+      %>% st_collection_extract("POLYGON")
+      %>% st_cast( "POLYGON" )
+    )
+
   }
 
 
@@ -381,28 +402,6 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
   # --------------------
 
-  if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
-    # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
-    message("Computing surface areas for each subarea ... can be slow if this is your first time")
-    for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
-      print(subarea)
-      csa = polygons_managementarea( species="snowcrab", area=subarea )
-      csa = as(csa, "sf")
-      csa = st_transform( csa, sp::CRS( areal_units_proj4string_planar_km ) )
-      sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ) )
-      ooo = st_intersection( csa, sppoly )
-      ooo$surfacearea = st_area( ooo )
-      vn = paste(subarea, "surfacearea", sep="_")
-      sppoly[[ vn ]] = 0
-      j = match( ooo$AUID, sppoly$AUID )
-      if (length(j) > 0)  sppoly[[ vn ]][j] = ooo$surfacearea
-    }
-    sppoly = st_transform( sppoly, sp::CRS(projection_proj4string("lonlat_wgs84"))  ) # revert
-  }
-
-
-  # ------------------------------------------------
-
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
   sppoly[, "au_sa_km2"] = st_area(sppoly)
@@ -420,8 +419,30 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
     row.names(sppoly) = sppoly$AUID
   }
 
+
+  if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
+    # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
+    message("Computing surface areas for each subarea ... can be slow if this is your first time")
+    for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
+      print(subarea)
+      csa = polygons_managementarea( species="snowcrab", area=subarea )
+      csa = as(csa, "sf")
+      csa = st_transform( csa, sp::CRS( areal_units_proj4string_planar_km ) )
+      ooo = st_intersection( csa, sppoly )
+      ooo$surfacearea = st_area( ooo )
+      vn = paste(subarea, "surfacearea", sep="_")
+      sppoly[[ vn ]] = 0
+      j = match( ooo$AUID, sppoly$AUID )
+      if (length(j) > 0)  sppoly[[ vn ]][j] = ooo$surfacearea
+    }
+  }
+
+
+  # ------------------------------------------------
+
+
   # force saves as Spatial* data
-  sppoly = st_transform( sppoly, sp::CRS(projection_proj4string("lonlat_wgs84")) )  # in km
+  sppoly = st_transform( sppoly, sp::CRS(projection_proj4string("lonlat_wgs84")) )  #
   sppoly = as(sppoly, "Spatial")
 
   # poly* function operate on Spatial* data
