@@ -54,19 +54,14 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
     } else {
 
-      pn = spatial_parameters( spatial_domain=spatial_domain )  # geeneric defaults
-      Z = bathymetry.db( p=pn, DS="aggregated_data" )
-      names(Z)[which(names(Z)=="z.mean" )] = "z"
-      Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)  # should not be required but to make sure
-      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
+      spdf0 = spatial_domain_discretized(spatial_domain)
 
-      spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(pn$aegis_proj4string_planar_km) )
       require(raster)
       raster_template = raster(extent(spdf0)) # +1 to increase the area
       res(raster_template) = areal_units_resolution_km  # in units of crs (which should be in  km)
       crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
 
-      sppoly = rasterize( Z[, c("plon", "plat")], raster_template, field=Z$z )
+      sppoly = rasterize( spdf0[, c("plon", "plat")], raster_template, field=spdf0$z )
     }
 
     sppoly = as( as(sppoly, "SpatialPolygonsDataFrame"), "sf")
@@ -242,26 +237,10 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
       )
     }
 
-    require(aegis.coastline)
-    coast = (
-        as( coastline.db( p=p, DS="eastcoast_gadm" ), "sf")
-        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
-        %>% st_simplify()
-        %>% st_buffer(0.1)
-        %>% st_union()
-    )
-
-    sppoly = (
-      as(data_boundary, "sf")
-      %>% st_union()
-      %>% st_buffer(0.1)
-      %>% st_difference( coast)
-      %>% st_collection_extract("POLYGON")
-      %>% st_cast( "POLYGON" )
-    )
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), sppoly )
+      st_intersection( as( spmesh, "sf"), as(data_boundary, "sf") )
+      %>% st_simplify()
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
@@ -309,29 +288,37 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
 
-    pn = spatial_parameters( spatial_domain=spatial_domain )
-    Z = bathymetry.db( p=pn, DS="aggregated_data" )
-    names(Z)[which(names(Z)=="z.mean" )] = "z"
-    Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)  # should not be required but to make sure
-    Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
-
-    spdf0 = SpatialPoints(Z[, c("plon", "plat")], proj4string=sp::CRS(pn$aegis_proj4string_planar_km) )
+    spdf0 = spatial_domain_discretized(spatial_domain)
 
     require(raster)
 
+    raster_resolution = p$pres
+
+    # higher resolution raster
     raster_template = raster(extent(spdf0)) # +1 to increase the area
-    res(raster_template) = pn$pres/10  # in units of crs (which should be in 1 km .. so 100m)
+    res(raster_template) = raster_resolution  # in units of crs (which should be in 1 km .. so 100m)
     crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
 
-    rasterized_depths = rasterize( Z[, c("plon", "plat")], raster_template, field=Z$z )
-    rasterized_depths = as(rasterized_depths, "SpatialPolygonsDataFrame")
+
+    rasterized_depths = rasterize( spdf0[, c("plon", "plat")], raster_template, field=spdf0$z )
+
     rasterized_depths = (
-      as(rasterized_depths, "sf")
-      %>% st_buffer(0.1 )
+      as(as(rasterized_depths, "SpatialPolygons"), "sf")
+      %>% st_buffer( raster_resolution )
       %>% st_simplify()
       %>% st_union( )
       %>% st_simplify()
+      %>% st_collection_extract("POLYGON")
+      %>% st_cast( "POLYGON" )
     )
+
+    sppoly = (
+      st_intersection( sppoly, rasterized_depths )
+      %>% st_simplify()
+      %>% st_collection_extract("POLYGON")
+      %>% st_cast( "POLYGON" )
+    )
+
 
     domain = (
       as( polygons_managementarea( species="snowcrab", area="cfaall") , "sf" )
@@ -340,41 +327,17 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
       %>% st_buffer(0.1)
       %>% st_union()
       %>% st_simplify()
-    )
-
-    domain = (
-      st_intersection( domain, rasterized_depths )
-      %>%  st_union()
-      %>%  st_simplify()
-    )
-
-    require(aegis.coastline)
-    landmask = (
-        as( coastline.db( p=p, DS="eastcoast_gadm" ), "sf")
-        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
-        %>% st_simplify()
-        %>% st_buffer(0.1)
-        %>% st_union()
+      %>% st_collection_extract("POLYGON")
+      %>% st_cast( "POLYGON" )
     )
 
     sppoly = (
       st_intersection( sppoly, domain )
       %>% st_simplify()
-      %>% st_buffer(0.1)
-      %>%  st_collection_extract("POLYGON")
-      %>%  st_cast( "POLYGON" )
-    )
-
-    # must be done separately
-    sppoly = (
-      st_difference( sppoly, landmask )
-      %>% st_simplify()
-      %>% st_buffer(0.1)
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
-
-  }
+ }
 
 
   # --------------------
@@ -401,7 +364,6 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
   }
 
   # --------------------
-
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
   sppoly[, "au_sa_km2"] = st_area(sppoly)
@@ -442,7 +404,6 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
 
   # force saves as Spatial* data
-  sppoly = st_transform( sppoly, sp::CRS(projection_proj4string("lonlat_wgs84")) )  #
   sppoly = as(sppoly, "Spatial")
 
   # poly* function operate on Spatial* data
