@@ -371,8 +371,8 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
   # plot(st_geometry(sppoly))
   # plot(sppoly[,"au_sa_km2"])
 
-  units( sa_threshold_km2 ) = units( sppoly$au_sa_km2 )
-  toremove = which( c(sppoly$au_sa_km2) < c(sa_threshold_km2))
+  class( sppoly$au_sa_km2 ) = NULL
+  toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
   if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
 
