@@ -342,6 +342,10 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
   # --------------------
 
+  if ( grepl("snowcrab", areal_units_overlay) ) {
+    areal_units_constraint = snowcrab.db( p=p, DS="set.clean" )  #
+    areal_units_constraint = areal_units_constraint[, c("lon", "lat")]
+  }
 
   if (class( areal_units_constraint ) %in% c("data.frame", "matrix") ) {
     # this part done as a "Spatial" object
