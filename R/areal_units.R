@@ -36,15 +36,17 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
 
-  message( "Using areal units specified in ", areal_units_fn_full)
-
   sppoly = NULL
 
   if (!redo) {
-    if (file.exists(areal_units_fn_full)) load(areal_units_fn_full)
+    if (file.exists(areal_units_fn_full)) {
+      load(areal_units_fn_full)
+      message( "Using areal units specified in ", areal_units_fn_full)
+    }
     if( !is.null(sppoly) ) return(sppoly)
   }
 
+  message( "Creating/over-writing areal units specified in ", areal_units_fn_full)
 
   if (areal_units_source == "lattice" ) {
     # res based on grids ... rather than arbitrary polygons
