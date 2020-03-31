@@ -1,5 +1,5 @@
 
-maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefilelocation=NULL, returntype="polygons") {
+maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre2014", shapefilelocation=NULL, returntype="polygons") {
   # create a SpatialPolygons of the groundfish strata used in Martimes Region of Canada
   require(maptools)
   require(rgdal)
@@ -9,7 +9,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
 
   if (returntype=="polygons") {
 
-    if (timeperiod=="pre2014") {
+    if (areal_units_timeperiod=="pre2014") {
       shapefilename = "GB_STRATA_VDC"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
       o1 = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
@@ -31,7 +31,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
       return(groundfish_strata)
     }
 
-    if (timeperiod=="post2014") {
+    if (areal_units_timeperiod=="post2014") {
       shapefilename = "MaritimesRegionEcosystemAssessmentStrata"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
       groundfish_strata = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
@@ -46,7 +46,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
 
   if (returntype=="neighbourhoods") {
 
-    if (timeperiod=="pre2014") {
+    if (areal_units_timeperiod=="pre2014") {
       if (0){
         # polygons seem malformed .. manually modify connectivity
         isolated = which( card(W.nb) == 0)
@@ -86,8 +86,8 @@ maritimes_groundfish_strata = function( W.nb=NULL, timeperiod="pre2014", shapefi
       return( W.nb )
     }
 
-    if (timeperiod=="post2014") {
-      sppoly = maritimes_groundfish_strata( timeperiod=timeperiod, returntype="polygons" )
+    if (areal_units_timeperiod=="post2014") {
+      sppoly = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" )
       W.nb = spdep::poly2nb(sppoly, row.names=rownames(sppoly@data$AUID ) )
       if (0){
         # polys look ok

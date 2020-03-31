@@ -1,8 +1,9 @@
 
-areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", ... ) {
+
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", ... ) {
 
   if (0) {
-    timeperiod="default"
+    areal_units_timeperiod="default"
     plotit=FALSE
     sa_threshold_km2=0
     redo=FALSE
@@ -11,32 +12,36 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
   p = parameters_control(p, list(...), control="add") # add passed args to parameter list, priority to args
 
-  spatial_domain =  ifelse (exists("spatial_domain", p), p$spatial_domain, "SSE" )
-
   aegis_internal_resolution_km = ifelse (exists("aegis_internal_resolution_km", p), p$aegis_internal_resolution_km, 1 )
   areal_units_proj4string_planar_km =  ifelse (exists("areal_units_proj4string_planar_km", p), p$areal_units_proj4string_planar_km, "+proj=utm +ellps=WGS84 +zone=20 +units=km" )
-  areal_units_source =  ifelse (exists("areal_units_source", p), p$areal_units_source, "lattice" )
-  areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 20 )
-  areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
 
-  areal_units_fn = ifelse ( exists( "areal_units_fn", p), p$areal_units_fn,
-    paste(
-      spatial_domain,
-      paste0(areal_units_overlay, collapse="_"),
-      areal_units_resolution_km,
-      areal_units_source,
-      timeperiod,
-      sep="_"
-    )
+
+  # these are required:
+  spatial_domain =  ifelse (exists("spatial_domain", p), p$spatial_domain, "SSE" )
+  areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
+  areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 20 )
+  areal_units_source =  ifelse (exists("areal_units_source", p), p$areal_units_source, "lattice" )
+  areal_units_overlay =  ifelse (exists("areal_units_source", p), p$areal_units_source, "lattice" )
+
+  areal_units_fn = paste(
+    spatial_domain,
+    paste0(areal_units_overlay, collapse="_"),
+    areal_units_resolution_km,
+    areal_units_source,
+    areal_units_timeperiod,
+    sep="_"
   )
 
-  fn = file.path( project.datadirectory("aegis", "polygons", "areal_units" ), paste(areal_units_fn, "rdata", sep="." ) )
-  print(fn)
+  areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )
+
+  areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
+
+  message( "Using areal units specified in ", areal_units_fn_full)
 
   sppoly = NULL
 
   if (!redo) {
-    if (file.exists(fn)) load(fn)
+    if (file.exists(areal_units_fn_full)) load(areal_units_fn_full)
     if( !is.null(sppoly) ) return(sppoly)
   }
 
@@ -75,7 +80,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
-    sppoly = maritimes_groundfish_strata( timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod ), returntype="polygons" )
+    sppoly = maritimes_groundfish_strata( areal_units_timeperiod=ifelse( areal_units_timeperiod=="default", "pre2014", areal_units_timeperiod ), returntype="polygons" )
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
     sppoly = as(sppoly, "sf")
     sppoly$AUID = as.character(sppoly$AUID)
@@ -252,7 +257,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
 
   if ( grepl("groundfish_strata", areal_units_overlay) ) {
 
-    timeperiod=ifelse( timeperiod=="default", "pre2014", timeperiod )
+    areal_units_timeperiod=ifelse( areal_units_timeperiod=="default", "pre2014", areal_units_timeperiod )
 
     ### next section is the same as "stratanal polygons" below .. copied here to avoid recursion
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
@@ -260,7 +265,7 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
 
-    gf = as( maritimes_groundfish_strata( timeperiod=timeperiod, returntype="polygons" ), "sf")
+    gf = as( maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" ), "sf")
     gf$AUID = as.character(gf$AUID)
     row.names(gf) = gf$AUID
 
@@ -427,7 +432,19 @@ areal_units = function( p=NULL, timeperiod="default", plotit=FALSE, sa_threshold
   }
 
   attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
-  save(sppoly, file=fn, compress=TRUE)
+
+  attr(sppoly, "spatial_domain") = spatial_domain
+
+  attr(sppoly, "areal_units_fn") = areal_units_fn
+  attr(sppoly, "areal_units_fn_full") = areal_units_fn_full
+  attr(sppoly, "areal_units_directory") = areal_units_directory
+  attr(sppoly, "areal_units_overlay") = areal_units_overlay
+  attr(sppoly, "areal_units_resolution_km") = areal_units_resolution_km
+  attr(sppoly, "areal_units_source") = areal_units_source
+  attr(sppoly, "areal_units_timeperiod") = areal_units_timeperiod
+
+  save(sppoly, file=areal_units_fn_full, compress=TRUE)
+
   if (plotit) plot(sppoly)
 
   return( sppoly )

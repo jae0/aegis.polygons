@@ -20,7 +20,6 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
       # areal_units_proj4string_planar_km = "+proj=omerc +lat_0=44.0 +lonc=-63.0 +gamma=0.0 +k=1 +alpha=325 +x_0=0 +y_0=0 +ellps=WGS84 +units=km",  # oblique mercator, centred on Scotian Shelf rotated by 325 degrees
       areal_units_source = "lattice", # "stmv_fields" to use ageis fields instead of carstm fields ... note variables are not the same
       areal_units_overlay = areal_units_overlay, # additional polygon layers for subsequent analysis such as management area: "snowcrab" or "groundfish"  # for now ..
-      areal_units_constraint="none", # set[, c("lon", "lat")],  # to limit to sppoly to only those with data that fall into them
       libs = RLibrary ( "sp", "rgeos", "INLA", "raster", "aegis",  "aegis.polygons", "aegis.bathymetry", "carstm" )
     )
 
