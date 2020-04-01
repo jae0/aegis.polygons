@@ -41,7 +41,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (!redo) {
     if (file.exists(areal_units_fn_full)) {
       load(areal_units_fn_full)
-      message( "Using areal units specified in ", areal_units_fn_full)
+      # message( "Using areal units specified in ", areal_units_fn_full)
     }
     if( !is.null(sppoly) ) return(sppoly)
   }
