@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", ... ) {
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", areal_units_tessilation_nmin=0, ... ) {
 
   if (0) {
     areal_units_timeperiod="default"
@@ -115,14 +115,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
           # plot(data_boundary)
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
-      areal_units_tessilation_factor = ifelse( exists("areal_units_tessilation_factor", p), p$areal_units_tessilation_factor, 5 )  # reduction for initial pass
-      spmesh = aegis_mesh( SPDF=gfset,  resolution=areal_units_resolution_km/ areal_units_tessilation_factor, output_type="grid.count" )  # coarse grid representation
-      if (exists("areal_units_tessilation_nmin", p)) {
-        spmesh = spmesh[ spmesh$layer > p$areal_units_tessilation_nmin, ]
-        spmesh$AUID = as.character( 1:length(spmesh) )
-        row.names(spmesh) = spmesh$AUID
-      }
-      spmesh = aegis_mesh( SPDF=spmesh, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, output_type="polygons" )  # voroni tesslation and delaunay triagulation
+     spmesh = aegis_mesh( SPDF=gfset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_tessilation_nmin=areal_units_tessilation_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
@@ -205,14 +198,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
           # plot(data_boundary)
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
-      areal_units_tessilation_factor = ifelse( exists("areal_units_tessilation_factor", p), p$areal_units_tessilation_factor, 5 )  # reduction for initial pass
-      spmesh = aegis_mesh( SPDF=snset,  resolution=areal_units_resolution_km/ areal_units_tessilation_factor, output_type="grid.count" )  # coarse grid representation
-      if (exists("areal_units_tessilation_nmin", p)) {
-        spmesh = spmesh[ spmesh$layer > p$areal_units_tessilation_nmin, ]
-        spmesh$AUID = as.character( 1:length(spmesh) )
-        row.names(spmesh) = spmesh$AUID
-      }
-      spmesh = aegis_mesh( SPDF=spmesh, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, output_type="polygons" )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( SPDF=snset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_tessilation_nmin=areal_units_tessilation_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "snowcrab_polygons_inla_mesh" ) {
