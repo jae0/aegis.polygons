@@ -22,6 +22,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   areal_units_source =  ifelse (exists("areal_units_source", p), p$areal_units_source, "lattice" )
   areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
   areal_units_timeperiod =  ifelse (exists("areal_units_timeperiod", p), p$areal_units_timeperiod, "default" )
+  areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
 
   areal_units_fn = paste(
     spatial_domain,
