@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", areal_units_tessilation_nmin=0, ... ) {
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", areal_units_constraint_nmin=0, ... ) {
 
   if (0) {
     areal_units_timeperiod="default"
@@ -115,7 +115,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
           # plot(data_boundary)
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
-     spmesh = aegis_mesh( SPDF=gfset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_tessilation_nmin=areal_units_tessilation_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
+     spmesh = aegis_mesh( SPDF=gfset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
@@ -178,6 +178,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (areal_units_source %in% c("snowcrab_polygons_inla_mesh",  "snowcrab_polygons_tesselation") ) {
 
     snset = snowcrab.db( p=p, DS="set.clean"  )  #
+    areal_units_constraint = snset[, c("lon", "lat")]
+
     snset = lonlat2planar(snset, areal_units_proj4string_planar_km)  # should not be required but to make sure
     snset = geo_subset( spatial_domain=spatial_domain, Z=snset )
     snset$AUID = snset$id
@@ -186,6 +188,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     sp::proj4string(snset) = projection_proj4string("lonlat_wgs84")
 
     snset = spTransform( snset, sp::CRS( areal_units_proj4string_planar_km ) )  # in km
+
     locs = coordinates( snset )
     locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
@@ -198,7 +201,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
           # plot(data_boundary)
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
-      spmesh = aegis_mesh( SPDF=snset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_tessilation_nmin=areal_units_tessilation_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( SPDF=snset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "snowcrab_polygons_inla_mesh" ) {
@@ -335,13 +338,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # --------------------
 
-  if ( grepl("snowcrab", areal_units_overlay) ) {
-    areal_units_constraint = snowcrab.db( p=p, DS="set.clean" )  #
-    areal_units_constraint = areal_units_constraint[, c("lon", "lat")]
-  }
-
   if (class( areal_units_constraint ) %in% c("data.frame", "matrix") ) {
     # this part done as a "Spatial" object
+    # already done in tessilation method so not really needed but
+    # for other methods, this ensures a min no samples in each AU
 
     sppoly = as(sppoly, "Spatial")
     sppoly$uid_internal = as.character( 1:nrow(sppoly) )
