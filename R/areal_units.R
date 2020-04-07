@@ -175,11 +175,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   }
 
 
+
   if (areal_units_source %in% c("snowcrab_polygons_inla_mesh",  "snowcrab_polygons_tesselation") ) {
 
     snset = snowcrab.db( p=p, DS="set.clean"  )  #
-    areal_units_constraint = snset[, c("lon", "lat")]
-
     snset = lonlat2planar(snset, areal_units_proj4string_planar_km)  # should not be required but to make sure
     snset = geo_subset( spatial_domain=spatial_domain, Z=snset )
     snset$AUID = snset$id
@@ -338,6 +337,15 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # --------------------
 
+  if (class( areal_units_constraint ) == "character") {
+    if (areal_units_constraint == "snowcrab") {
+      areal_units_constraint = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
+    }
+    if (areal_units_constraint %in% c("groundfish", "aegis.survey" ) ){
+      areal_units_constraint = gfset = survey.db( DS="set.base", p=p )[, c("lon", "lat")]  #
+    }
+  }
+
   if (class( areal_units_constraint ) %in% c("data.frame", "matrix") ) {
     # this part done as a "Spatial" object
     # already done in tessilation method so not really needed but
@@ -361,6 +369,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   }
 
   # --------------------
+  # completed mostly, final filters where required
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
   sppoly[, "au_sa_km2"] = st_area(sppoly)
