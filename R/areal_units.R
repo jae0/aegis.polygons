@@ -30,6 +30,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     areal_units_resolution_km,
     areal_units_source,
     areal_units_timeperiod,
+    areal_units_constraint_nmin
     sep="_"
   )
 
@@ -440,6 +441,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   attr(sppoly, "areal_units_resolution_km") = areal_units_resolution_km
   attr(sppoly, "areal_units_source") = areal_units_source
   attr(sppoly, "areal_units_timeperiod") = areal_units_timeperiod
+  attr(sppoly, "areal_units_constraint_nmin") = areal_units_constraint_nmin
 
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
 
