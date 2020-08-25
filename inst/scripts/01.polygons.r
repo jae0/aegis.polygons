@@ -65,7 +65,7 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
   lines( scotianshelf, col="orange" )
 
   # Access method 3: one step .. just the data (projected or not)
-  scotianshelf = polygon.db( polyid="test", crs="+proj=utm +ellps=WGS84 +zone=20 +units=km" )
+  scotianshelf = polygon.db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" )
 
   # Access method 4: one step data and plot it too
-  scotianshelf = polygon.db( polyid="test", crs="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p, plotmap=TRUE ) # p contains the extent
+  scotianshelf = polygon.db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p, plotmap=TRUE ) # p contains the extent

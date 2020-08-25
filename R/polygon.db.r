@@ -1,7 +1,7 @@
 
-polygon.db = function( DS="load", p=NULL, polyid=NULL, crs=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
+polygon.db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
   #\\ create/extract polygons and/or return on a map
-  #\\ if crs is passed, default storage/load CRS is assumed lonlat
+  #\\ if project_to is passed, default storage/load CRS is assumed lonlat
   #\\ default return value is lon/lat in data frame, also possible to return as a polygon
 
   if (DS=="map.background") {
@@ -20,20 +20,23 @@ polygon.db = function( DS="load", p=NULL, polyid=NULL, crs=projection_proj4strin
     }
     X = read.table (fn)
     colnames( X ) = c("lon", "lat" )
-    if ( as.character(crs) != projection_proj4string("lonlat_wgs84") ) {
+    if ( as.character(project_to) != projection_proj4string("lonlat_wgs84") ) {
       YY = X
       coordinates(YY) = ~lon+lat
       proj4string( YY) =  projection_proj4string("lonlat_wgs84")
-      Z = spTransform( YY, sp::CRS(crs) )
+      Z = spTransform( YY, sp::CRS(project_to) )
       X = coordinates(Z)
     }
     if (plotmap) {
-      if ( as.character(crs) != projection_proj4string("lonlat_wgs84")  ) {
+      if ( as.character(project_to) != projection_proj4string("lonlat_wgs84")  ) {
         polygon.db( DS="map.background", p=p)
       } else {
         u = maps::map( database="worldHires", regions=p$regions, xlim=p$xlim, ylim=p$ylim, fill=FALSE, plot=FALSE )
         v = data.frame( cbind( u$x, u$y) )
-        w = rgdal::project( as.matrix(v), proj=as.character(crs) )
+
+        # w = rgdal::project( as.matrix(v), proj=as.character(project_to) )
+        w = sf::sf_project( from=sf::st_crs("EPSG:4326"), to=project_to, pts=as.matrix(v) )
+
         plot (w, pch=".", col="gray", xlab="Easting", ylab="Northing")
       }
       lines(X, col="green")

@@ -1,5 +1,5 @@
 
-polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE, crs="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
+polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
 
   if (species=="snowcrab") {
     polydir = project.datadirectory("aegis", "polygons")
@@ -22,13 +22,13 @@ polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE
     }
 
     wsp = SpatialPolygons( w, proj4string=sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") )  # expect lon/lat
-    wsp = spTransform( wsp, sp::CRS(crs) )
+    wsp = spTransform( wsp, sp::CRS(project_to) )
     wsp = as(wsp, "sf")
     wsp = st_simplify(wsp)
     wsp = st_buffer(wsp, 0.1)
 
     coast = coastline.db( p=p, DS="eastcoast_gadm" )
-    coast = spTransform( coast, sp::CRS(crs) )
+    coast = spTransform( coast, sp::CRS(project_to) )
     coast = as( coast, "sf")
     coast = st_simplify(coast)
     coast = st_buffer(coast, 0.1)
