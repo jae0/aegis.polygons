@@ -10,7 +10,7 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
    for ( spatial_domain in c("snowcrab", "SSE")) {
     areal_units_overlay = "snowcrab_managementareas"
     if ( spatial_domain=="SSE") areal_units_overlay = "groundfish_strata"
-    p = aegis.carstm::bathymetry_carstm(
+    p = aegis.bathymetry::bathymetry_carstm(
       DS = "parameters",
       project_class = "carstm", # defines which parameter set to load
       inputdata_spatial_discretization_planar_km = 1,  # 1 km .. requires 32 GB RAM and limit of speed -- controls resolution of data prior to modelling to reduce data set and speed up modelling
