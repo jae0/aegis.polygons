@@ -119,7 +119,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
           # plot(data_boundary)
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
-     spmesh = aegis_mesh( SPDF=gfset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
+     spmesh = aegis_mesh( SPDF=gfset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
@@ -204,7 +204,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
           # plot(data_boundary)
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
-      spmesh = aegis_mesh( SPDF=snset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, output_type="polygons" )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( SPDF=snset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "snowcrab_polygons_inla_mesh" ) {
@@ -382,6 +382,9 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   # plot(sppoly[,"au_sa_km2"])
 
   class( sppoly$au_sa_km2 ) = NULL
+  if ( sa_threshold_km2 == 0 ) {
+    if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
+  }
   toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
   if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
