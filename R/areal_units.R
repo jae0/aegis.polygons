@@ -103,7 +103,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     gfset$AUID = gfset$id
     coordinates(gfset) = ~ lon+lat
-    rownames(gfset@data) = gfset$AUID
+    rownames(slot(gfset,"data")) = gfset$AUID
     sp::proj4string(gfset) = projection_proj4string("lonlat_wgs84")
 
     gfset = spTransform( gfset, sp::CRS( areal_units_proj4string_planar_km ) )  # in km
@@ -187,7 +187,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     snset = geo_subset( spatial_domain=spatial_domain, Z=snset )
     snset$AUID = snset$id
     coordinates(snset) = ~ lon+lat
-    rownames(snset@data) = snset$AUID
+    rownames( slot(snset, "data") ) = snset$AUID
     sp::proj4string(snset) = projection_proj4string("lonlat_wgs84")
 
     snset = spTransform( snset, sp::CRS( areal_units_proj4string_planar_km ) )  # in km

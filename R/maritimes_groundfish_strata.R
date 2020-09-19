@@ -25,7 +25,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
 
       groundfish_strata <- rbind(o1, o2)
 
-      attr(groundfish_strata, "region.id") = as.character( groundfish_strata@data$AUID )
+      attr(groundfish_strata, "region.id") = as.character( slot(groundfish_strata, "data")[,"AUID"] )
 
       # plot(groundfish_strata)
       return(groundfish_strata)
@@ -38,7 +38,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
       names(groundfish_strata) = "AUID"
 
       # plot(groundfish_strata)
-      attr(groundfish_strata, "region.id") = as.character( groundfish_strata@data$AUID )
+      attr(groundfish_strata, "region.id") = as.character( slot(groundfish_strata, "data")[,"AUID"] )
 
       return( groundfish_strata)
     }
@@ -88,7 +88,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
 
     if (areal_units_timeperiod=="post2014") {
       sppoly = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" )
-      W.nb = spdep::poly2nb(sppoly, row.names=rownames(sppoly@data$AUID ) )
+      W.nb = spdep::poly2nb(sppoly, row.names=rownames(slot(sppoly, "data")[,"AUID"] ) )
       if (0){
         # polys look ok
         plot(sppoly)
