@@ -1,5 +1,5 @@
 
-polygon.db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
+polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
   #\\ create/extract polygons and/or return on a map
   #\\ if project_to is passed, default storage/load CRS is assumed lonlat
   #\\ default return value is lon/lat in data frame, also possible to return as a polygon
@@ -29,7 +29,7 @@ polygon.db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
     }
     if (plotmap) {
       if ( as.character(project_to) != projection_proj4string("lonlat_wgs84")  ) {
-        polygon.db( DS="map.background", p=p)
+        polygon_db( DS="map.background", p=p)
       } else {
         u = maps::map( database="worldHires", regions=p$regions, xlim=p$xlim, ylim=p$ylim, fill=FALSE, plot=FALSE )
         v = data.frame( cbind( u$x, u$y) )
@@ -46,7 +46,7 @@ polygon.db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
 
   if (DS=="create") {
     print( "Left mouse click and then to end right-mouse click (or [Esc] in Windows ) " )
-    polygon.db ( DS="map.background", p=p )
+    polygon_db ( DS="map.background", p=p )
     X = locator(type="o" )
     X = as.data.frame( X)
     colnames(X) = c("lon", "lat")

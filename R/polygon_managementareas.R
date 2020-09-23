@@ -1,5 +1,5 @@
 
-polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
+polygon_managementareas = function( species="snowcrab", area="cfall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
 
   if (species=="snowcrab") {
     polydir = project.datadirectory("aegis", "polygons")
@@ -16,7 +16,7 @@ polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE
 
     w = list()
     for (su in aegis.polygons::polygon_internal_code(area)) {
-      v = aegis.polygons::polygon.db( polyid=su  )
+      v = aegis.polygons::polygon_db( polyid=su  )
       vp = Polygon( as.matrix( v ) )
       w = c( w, list( Polygons(list(vp), ID=su )) )
     }
@@ -27,7 +27,7 @@ polygons_managementarea = function( species="snowcrab", area="cfall", redo=FALSE
     wsp = st_simplify(wsp)
     wsp = st_buffer(wsp, 0.1)
 
-    coast = coastline.db( p=p, DS="eastcoast_gadm" )
+    coast = coastline_db( p=p, DS="eastcoast_gadm" )
     coast = spTransform( coast, sp::CRS(project_to) )
     coast = as( coast, "sf")
     coast = st_simplify(coast)

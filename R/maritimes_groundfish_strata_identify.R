@@ -8,7 +8,7 @@
       message( "NOTE: e.g.,: strata 455 453 451 484 on NED2012022.224, NED2016016.241, NED2015017.215, NED2017020.70 trip.set") #
 
           # Load file from groundfish.stratum where area is converted to trawlable units divide area by 0.011801 (41ft by 1.75 nm)
-          # st = aegis.survey::groundfish.db(DS="gsstratum")
+          # st = aegis.survey::groundfish_survey_db(DS="gsstratum")
           # names(st) = paste("stratum", names(st), sep=".")
           # set = merge(all.sets, st, by.x="strat", by.y="stratum.strat", all.x=TRUE, all.y=FALSE, suffixes=c("", ".gsstratum") )
 
@@ -24,7 +24,7 @@
 
     Y = merge(Y, slot(sppoly, "data"), all.x=TRUE, all.y=FALSE)
 
-    st = aegis.survey::groundfish.db(DS="gsstratum")
+    st = aegis.survey::groundfish_survey_db(DS="gsstratum")
     names(st) = paste("stratum", names(st), sep=".")
     st$stratum.dmin.fathoms = as.numeric(st$stratum.dmin) #units? 0.54680665 fathoms = 1 meter
     st$stratum.dmax.fathoms = as.numeric(st$stratum.dmax) #units?

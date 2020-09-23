@@ -50,22 +50,22 @@ for ( areal_units_resolution_km in c(10, 20, 25) ) {
 
   # plot background map and using mouse interaction define region:
   # left mouse click to register, right mouse click to finish (or [Esc] is using Rstudio)
-  polygon.db( DS="create", p=p )
+  polygon_db( DS="create", p=p )
 
 
   # Access method 1: low level
   # read the data with read.table or read.csv
-  polygon.db( DS="map.background", p=p )
+  polygon_db( DS="map.background", p=p )
   scotianshelf = read.table( aegis.polygons::polygon_file( "test"  ) )
   lines( scotianshelf, col="green" )  # plot to confirm we have the right data
 
   # Access method 2: medium
-  polygon.db ( DS="map.background", p=p )
-  scotianshelf = polygon.db( polyid="test" )
+  polygon_db ( DS="map.background", p=p )
+  scotianshelf = polygon_db( polyid="test" )
   lines( scotianshelf, col="orange" )
 
   # Access method 3: one step .. just the data (projected or not)
-  scotianshelf = polygon.db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" )
+  scotianshelf = polygon_db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" )
 
   # Access method 4: one step data and plot it too
-  scotianshelf = polygon.db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p, plotmap=TRUE ) # p contains the extent
+  scotianshelf = polygon_db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p, plotmap=TRUE ) # p contains the extent

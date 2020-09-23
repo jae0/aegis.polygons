@@ -97,7 +97,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (areal_units_source %in% c("groundfish_polygons_inla_mesh",  "groundfish_polygons_tesselation") ) {
 
     ## method 1: Voronoi triangulation
-    gfset = survey.db( DS="set.base", p=p )
+    gfset = survey_db( DS="set.base", p=p )
     gfset = lonlat2planar(gfset, areal_units_proj4string_planar_km)  # should not be required but to make sure
     gfset = geo_subset( spatial_domain=spatial_domain, Z=gfset )
 
@@ -153,7 +153,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     require(aegis.coastline)
     coast = (
-        as( coastline.db( p=p, DS="eastcoast_gadm" ), "sf")
+        as( coastline_db( p=p, DS="eastcoast_gadm" ), "sf")
         %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
         %>% st_simplify()
         %>% st_buffer(0.1)
@@ -320,7 +320,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
 
     domain = (
-      as( polygons_managementarea( species="snowcrab", area="cfaall") , "sf" )
+      as( polygon_managementareas( species="snowcrab", area="cfaall") , "sf" )
       %>% st_transform( st_crs(sppoly) )
       %>% st_simplify()
       %>% st_buffer(0.1)
@@ -346,7 +346,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       areal_units_constraint = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
     }
     if (areal_units_constraint %in% c("groundfish", "aegis.survey" ) ){
-      areal_units_constraint = gfset = survey.db( DS="set.base", p=p )[, c("lon", "lat")]  #
+      areal_units_constraint = gfset = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
     }
   }
 
@@ -400,7 +400,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     message("Computing surface areas for each subarea ... can be slow if this is your first time")
     for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
       print(subarea)
-      csa = polygons_managementarea( species="snowcrab", area=subarea )
+      csa = polygon_managementareas( species="snowcrab", area=subarea )
       csa = as(csa, "sf")
       csa = st_transform( csa, sp::CRS( areal_units_proj4string_planar_km ) )
       ooo = st_intersection( csa, sppoly )
