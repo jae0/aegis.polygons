@@ -2,7 +2,7 @@
 spatial_domain_discretized = function( spatial_domain ) {
   # as points/grids
   pn = spatial_parameters( spatial_domain=spatial_domain )
-  Z = bathymetry.db( p=pn, DS="aggregated_data" )
+  Z = bathymetry_db( p=pn, DS="aggregated_data" )
   names(Z)[which(names(Z)=="z.mean" )] = "z"
   Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)  # should not be required but to make sure
   Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
