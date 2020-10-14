@@ -10,7 +10,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     use_stmv_solution=FALSE
   }
 
-  p = parameters_control(p, list(...), control="add") # add passed args to parameter list, priority to args
+  p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
   aegis_internal_resolution_km = ifelse (exists("aegis_internal_resolution_km", p), p$aegis_internal_resolution_km, 1 )
   areal_units_proj4string_planar_km =  ifelse (exists("areal_units_proj4string_planar_km", p), p$areal_units_proj4string_planar_km, "+proj=utm +ellps=WGS84 +zone=20 +units=km" )
