@@ -18,12 +18,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # these are required:
   spatial_domain =  ifelse (exists("spatial_domain", p), p$spatial_domain, "SSE" )
+  areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
   areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 25 )
   areal_units_source =  ifelse (exists("areal_units_source", p), p$areal_units_source, "lattice" )
-  areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
   areal_units_timeperiod =  ifelse (exists("areal_units_timeperiod", p), p$areal_units_timeperiod, "default" )
   areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
-
   areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)
 
   areal_units_fn = paste(
@@ -32,6 +31,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     areal_units_resolution_km,
     areal_units_source,
     areal_units_timeperiod,
+    areal_units_constraint,
     areal_units_constraint_nmin,
     sep="_"
   )
@@ -82,7 +82,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # ------------------------------------------------
 
-  if (areal_units_source == "stratanal_polygons") {
+  if (areal_units_source %in% c( "stratanal_polygons", "groundfish_strata")  ) {
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
@@ -245,6 +245,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     )
   }
 
+  if (is.null(sppoly)) stop( "areal_units_source was not recognized!")
 
   # --------------------
   # Overlays
