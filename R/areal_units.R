@@ -260,27 +260,52 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
 
+
+    if (0) {
+      sppoly = rasterize( spdf0[, c("plon", "plat")], raster_template, field=spdf0$z )
+      sppoly = as( as(sppoly, "SpatialPolygonsDataFrame"), "sf")
+    }
+
     gf = as( maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" ), "sf")
-    gf$AUID = as.character(gf$AUID)
-    row.names(gf) = gf$AUID
+    gf = st_make_valid(gf)
+    gf = st_transform(gf, st_crs(sppoly) )
+    gf$gfUID = as.character(gf$AUID)
+    gf$AUID = NULL
+    row.names(gf) = gf$gfUID
 
-    o = over( as(sppoly, "Spatial"), as(gf, "Spatial") ) # match each datum to an area
-    sppoly = sppoly[ which(!is.na(o$AUID)), ]
-    sppoly = as( sppoly, "sf")
-
-    gf = (
+    gf_boundary = (
       as( gf, "sf" )
       %>% st_simplify()
-      %>% st_buffer(aegis_internal_resolution_km)
+      %>% st_buffer( aegis_internal_resolution_km  )
       %>% st_union()
       %>% st_simplify()
+      %>% st_make_valid()
     )
 
+    sp0 = sppoly
+    sp0$AUID = as.character(1:length(sp0))
+
+
     sppoly = (
-      st_intersection( gf, sppoly )
+      st_intersection( st_intersection( gf_boundary, sppoly ), gf )
+      %>% st_simplify()
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
+
+    sppoly = (
+      st_join( st_sf(sppoly), gf, join=st_intersects,  largest=TRUE )
+    )
+
+    sppoly = (
+      st_join( st_sf(sppoly), sp0, join=st_intersects,  largest=TRUE )
+      %>% st_simplify()
+      %>% st_collection_extract("POLYGON")
+      %>% st_cast( "POLYGON" )
+    )
+    sppoly = st_make_valid(sppoly)
+    sppoly$index = sppoly$AUID
+    sppoly$AUID = paste( sppoly$AUID , sppoly$gfUID, sep="_")
 
   }
 
@@ -319,7 +344,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_cast( "POLYGON" )
     )
 
-
     domain = (
       as( polygon_managementareas( species="snowcrab", area="cfaall") , "sf" )
       %>% st_transform( st_crs(sppoly) )
@@ -351,10 +375,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     }
   }
 
-  if (class( areal_units_constraint ) %in% c("data.frame", "matrix") ) {
+  if (inherits( areal_units_constraint, c("data.frame", "matrix") ) ) {
     # this part done as a "Spatial" object
     # already done in tessilation method so not really needed but
     # for other methods, this ensures a min no samples in each AU
+    # todo:  convert to sf:: st_join
 
     sppoly = as(sppoly, "Spatial")
     sppoly$uid_internal = as.character( 1:nrow(sppoly) )
@@ -375,25 +400,24 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # --------------------
   # completed mostly, final filters where required
+  if (!exists("AUID", sppoly)) {
+    sppoly$AUID  = as.character( 1:nrow(sppoly) )
+    # rownames(sppoly) = sppoly$AUID
+  }
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
-  sppoly[, "au_sa_km2"] = st_area(sppoly)
+  sppoly$au_sa_km2 = st_area(sppoly)
 
   # plot(st_geometry(sppoly))
   # plot(sppoly[,"au_sa_km2"])
 
-  class( sppoly$au_sa_km2 ) = NULL
+  attributes( sppoly$au_sa_km2 ) = NULL
   if ( sa_threshold_km2 == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
   }
   toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
   if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
-
-  if (!exists("AUID", sppoly)) {
-    sppoly[, "AUID"] = as.character( 1:nrow(sppoly) )
-    row.names(sppoly) = sppoly$AUID
-  }
 
 
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
