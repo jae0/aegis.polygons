@@ -115,7 +115,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     locs = coordinates( gfset )
     locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
-    boundary = maritimes_groundfish_boundary( areal_units_timeperiod="post2014", internal_resolution_km=0.1, crs_km=st_crs(sppoly) ) # post 2014 is larger
+    boundary = maritimes_fishery_boundary( DS="maritimes", internal_resolution_km=0.1, crs_km=st_crs(sppoly) ) # post 2014 is larger
     boundary = st_transform(boundary, st_crs(sppoly) )
 
     if (0) {
@@ -200,6 +200,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     spbuffer = 5
     hull_multiplier = 6
+
     boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
     boundary = list( Polygons(list( Polygon( as.matrix( boundary ) )), ID="boundary" ))
     boundary = SpatialPolygons( boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
@@ -323,7 +324,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     res(raster_template) = raster_resolution  # in units of crs (which should be in 1 km .. so 100m)
     crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
 
-
     rasterized_depths = rasterize( spdf0[, c("plon", "plat")], raster_template, field=spdf0$z )
 
     rasterized_depths = (
@@ -343,17 +343,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_cast( "POLYGON" )
     )
 
-    domain = (
-      as( polygon_managementareas( species="snowcrab", area="cfaall") , "sf" )
-      %>% st_transform( st_crs(sppoly) )
-      %>% st_simplify()
-      %>% st_buffer(0.1)
-      %>% st_union()
-      %>% st_simplify()
-     )
+    boundary = maritimes_fishery_boundary( DS="maritimes", internal_resolution_km=0.1, crs_km=st_crs(sppoly) )
+    boundary = st_transform(boundary, st_crs(sppoly) )
 
     sppoly = (
-      st_intersection( sppoly, domain )
+      st_intersection( sppoly, boundary )
       %>% st_simplify()
     )
   }
@@ -418,7 +412,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   }
   toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
   if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
-
 
 
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {

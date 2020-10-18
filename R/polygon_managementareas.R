@@ -1,7 +1,7 @@
 
-polygon_managementareas = function( species="snowcrab", area="cfall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
+polygon_managementareas = function( species="maritimes", area="cfall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
 
-  if (species=="snowcrab") {
+  if (species %in% c("maritimes", "snowcrab") ) {
     polydir = project.datadirectory("aegis", "polygons")
     outdir = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Snowcrab" )
     if (!file.exists( outdir )) dir.create( outdir, recursive=TRUE, showWarnings=FALSE )
