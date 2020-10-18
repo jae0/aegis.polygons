@@ -23,7 +23,17 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
       o2 = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
       names(o2) = "AUID"
 
-      groundfish_strata <- rbind(o1, o2)
+      groundfish_strata = rbind(o1, o2)
+      class(groundfish_strata) = class(o1)
+
+      # i = which( ! st_is_valid(groundfish_strata) )
+      # 38 overlaps with 40
+      require(sf)
+      groundfish_strata = as( groundfish_strata, "sf")
+      groundfish_strata = st_make_valid(groundfish_strata)
+      st_geometry(groundfish_strata[40,]) = st_difference( st_geometry(groundfish_strata[40,]), st_geometry(groundfish_strata[38,]))
+      groundfish_strata = st_make_valid(groundfish_strata)
+      groundfish_strata = as( groundfish_strata, "Spatial")
 
       attr(groundfish_strata, "region.id") = as.character( slot(groundfish_strata, "data")[,"AUID"] )
 
@@ -36,6 +46,13 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
       groundfish_strata = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
       names(groundfish_strata) = "AUID"
+
+      require(sf)
+      groundfish_strata = as( groundfish_strata, "sf")
+      groundfish_strata = st_make_valid(groundfish_strata)
+      # i = which( ! st_is_valid(groundfish_strata) )
+      # groundfish_strata = st_make_valid(groundfish_strata)
+      groundfish_strata = as( groundfish_strata, "Spatial")
 
       # plot(groundfish_strata)
       attr(groundfish_strata, "region.id") = as.character( slot(groundfish_strata, "data")[,"AUID"] )

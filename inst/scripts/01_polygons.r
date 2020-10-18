@@ -7,7 +7,7 @@
 
 require(aegis.bathymetry)
 
-for ( areal_units_resolution_km in c(10, 20, 25) ) {
+for ( areal_units_resolution_km in c(5, 10, 20, 25) ) {
   # for ( spatial_domain in c("snowcrab", "SSE")) {
    for ( spatial_domain in c("snowcrab", "SSE")) {
     areal_units_overlay = "snowcrab_managementareas"

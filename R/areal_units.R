@@ -41,6 +41,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
 
   sppoly = NULL
+  boundary = NULL
+  coast = NULL
 
   if (!redo) {
     if (file.exists(areal_units_fn_full)) {
@@ -91,7 +93,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     sppoly = as(sppoly, "sf")
     sppoly$AUID = as.character(sppoly$AUID)
     row.names(sppoly) = sppoly$AUID
+
+
   }
+
 
 
   if (areal_units_source %in% c("groundfish_polygons_inla_mesh",  "groundfish_polygons_tesselation") ) {
@@ -110,27 +115,32 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     locs = coordinates( gfset )
     locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
-    spbuffer = 5
-    hull_multiplier = 6
-    data_boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
-    data_boundary = list( Polygons(list( Polygon( as.matrix( data_boundary ) )), ID="boundary" ))
-    data_boundary = SpatialPolygons( data_boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
-    data_boundary = gBuffer( gUnaryUnion( gBuffer( data_boundary, width=spbuffer, byid=TRUE) ), width=spbuffer)
-          # plot(data_boundary)
+    boundary = maritimes_groundfish_boundary( areal_units_timeperiod="post2014", internal_resolution_km=0.1, crs_km=st_crs(sppoly) ) # post 2014 is larger
+    boundary = st_transform(boundary, st_crs(sppoly) )
+
+    if (0) {
+      #altenate way of determining boundary based upon data
+      spbuffer = 5
+      hull_multiplier = 6
+      boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
+      boundary = list( Polygons(list( Polygon( as.matrix( boundary ) )), ID="boundary" ))
+      boundary = SpatialPolygons( boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
+      boundary = gBuffer( gUnaryUnion( gBuffer( boundary, width=spbuffer, byid=TRUE) ), width=spbuffer)
+      # plot(boundary)
+    }
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
      spmesh = aegis_mesh( SPDF=gfset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
-
       require(INLA)
       spmesh = inla.mesh.2d (
         loc=locs,
         max.edge = c( 0.5, 5 ) * areal_units_resolution_km,  #   # max size of a triange (in, out)
         offset = c( 0.1, 1 ) * areal_units_resolution_km , # how much to extend inside and outside of boundary,
         cutoff = c( 0.5, 5 ) * areal_units_resolution_km # min distance allowed between points #,
-        # boundary =  inla.mesh.segment(st_coordinates( as(data_boundary, "sf") )[,c(1,2)])
+        # boundary =  inla.mesh.segment(st_coordinates( as(boundary, "sf") )[,c(1,2)])
       )
 
       # convert to sp*
@@ -151,6 +161,15 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       )
     }
 
+
+    # must be done separately
+    sppoly = (
+      st_intersection( as( spmesh, "sf"), boundary )
+      %>% st_collection_extract("POLYGON")
+      %>% st_cast( "POLYGON" )
+    )
+
+  #  remove.coastline
     require(aegis.coastline)
     coast = (
         as( coastline_db( p=p, DS="eastcoast_gadm" ), "sf")
@@ -159,25 +178,9 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         %>% st_buffer(0.1)
         %>% st_union()
     )
-
-    sppoly = (
-      as(data_boundary, "sf")
-      %>% st_union()
-      %>% st_buffer(0.1)
-      %>% st_difference( coast)
-      %>% st_collection_extract("POLYGON")
-      %>% st_cast( "POLYGON" )
-    )
-
-    # must be done separately
-    sppoly = (
-      st_intersection( as( spmesh, "sf"), sppoly )
-      %>% st_collection_extract("POLYGON")
-      %>% st_cast( "POLYGON" )
-    )
+    sppoly = st_difference( sppoly, coast)
 
   }
-
 
 
   if (areal_units_source %in% c("snowcrab_polygons_inla_mesh",  "snowcrab_polygons_tesselation") ) {
@@ -197,11 +200,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     spbuffer = 5
     hull_multiplier = 6
-    data_boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
-    data_boundary = list( Polygons(list( Polygon( as.matrix( data_boundary ) )), ID="boundary" ))
-    data_boundary = SpatialPolygons( data_boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
-    data_boundary = gBuffer( gUnaryUnion( gBuffer( data_boundary, width=spbuffer, byid=TRUE) ), width=spbuffer)
-          # plot(data_boundary)
+    boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
+    boundary = list( Polygons(list( Polygon( as.matrix( boundary ) )), ID="boundary" ))
+    boundary = SpatialPolygons( boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
+    boundary = gBuffer( gUnaryUnion( gBuffer( boundary, width=spbuffer, byid=TRUE) ), width=spbuffer)
+          # plot(boundary)
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
       spmesh = aegis_mesh( SPDF=snset, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
@@ -215,7 +218,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         max.edge = c( 0.5, 5 ) * areal_units_resolution_km,  #   # max size of a triange (in, out)
         offset = c( 0.1, 1 ) * areal_units_resolution_km , # how much to extend inside and outside of boundary,
         cutoff = c( 0.5, 5 ) * areal_units_resolution_km # min distance allowed between points #,
-        # boundary =  inla.mesh.segment(st_coordinates( as(data_boundary, "sf") )[,c(1,2)])
+        # boundary =  inla.mesh.segment(st_coordinates( as(boundary, "sf") )[,c(1,2)])
       )
 
       # convert to sp*
@@ -238,11 +241,12 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), as(data_boundary, "sf") )
+      st_intersection( as( spmesh, "sf"), as(boundary, "sf") )
       %>% st_simplify()
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
+
   }
 
   if (is.null(sppoly)) stop( "areal_units_source was not recognized!")
@@ -273,21 +277,15 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     gf$AUID = NULL
     row.names(gf) = gf$gfUID
 
-    gf_boundary = (
-      as( gf, "sf" )
-      %>% st_simplify()
-      %>% st_buffer( aegis_internal_resolution_km  )
-      %>% st_union()
-      %>% st_simplify()
-      %>% st_make_valid()
-    )
+
+    boundary = maritimes_groundfish_boundary( areal_units_timeperiod=areal_units_timeperiod, internal_resolution_km=aegis_internal_resolution_km, crs_km=st_crs(sppoly) )
+    boundary = st_transform(boundary, st_crs(sppoly) )
 
     sp0 = sppoly
     sp0$AUID = as.character(1:length(sp0))
 
-
     sppoly = (
-      st_intersection( st_intersection( gf_boundary, sppoly ), gf )
+      st_intersection( st_intersection( boundary, sppoly ), gf )
       %>% st_simplify()
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
@@ -297,6 +295,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       st_join( st_sf(sppoly), gf, join=st_intersects,  largest=TRUE )
     )
 
+    # recover the data from sp0
     sppoly = (
       st_join( st_sf(sppoly), sp0, join=st_intersects,  largest=TRUE )
       %>% st_simplify()
@@ -351,26 +350,23 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_buffer(0.1)
       %>% st_union()
       %>% st_simplify()
-      %>% st_collection_extract("POLYGON")
-      %>% st_cast( "POLYGON" )
-    )
+     )
 
     sppoly = (
       st_intersection( sppoly, domain )
       %>% st_simplify()
-      %>% st_collection_extract("POLYGON")
-      %>% st_cast( "POLYGON" )
     )
- }
+  }
 
 
   # --------------------
+
 
   if (class( areal_units_constraint ) == "character") {
     if (areal_units_constraint == "snowcrab") {
       areal_units_constraint = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
     }
-    if (areal_units_constraint %in% c("groundfish", "aegis.survey" ) ){
+    if (any( areal_units_constraint %in% c("groundfish", "aegis.survey" ) )) {
       areal_units_constraint = gfset = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
     }
   }
@@ -398,10 +394,15 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     sppoly = as(sppoly, "sf")  # revert to sf
   }
 
+
+
+  # --------------------
+
+
   # --------------------
   # completed mostly, final filters where required
   if (!exists("AUID", sppoly)) {
-    sppoly$AUID  = as.character( 1:nrow(sppoly) )
+    sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
     # rownames(sppoly) = sppoly$AUID
   }
 
@@ -441,7 +442,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   # ------------------------------------------------
 
 
-  # force saves as Spatial* data
+  # force saves as Spatial* data (for poly2nb, really)
   sppoly = as(sppoly, "Spatial")
 
   # poly* function operate on Spatial* data
@@ -457,13 +458,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     row.names(sppoly) = sppoly$AUID
     sppoly = sp::spChFIDs( sppoly, row.names(sppoly) )  #fix id's
     sppoly = sppoly[order(sppoly$AUID),]
-
   }
 
   attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
-
   attr(sppoly, "spatial_domain") = spatial_domain
-
   attr(sppoly, "areal_units_fn") = areal_units_fn
   attr(sppoly, "areal_units_fn_full") = areal_units_fn_full
   attr(sppoly, "areal_units_directory") = areal_units_directory
