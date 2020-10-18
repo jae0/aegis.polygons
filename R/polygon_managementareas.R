@@ -1,5 +1,5 @@
 
-polygon_managementareas = function( species="maritimes", area="cfall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
+polygon_managementareas = function( species="maritimes", area="cfaall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
 
   if (species %in% c("maritimes", "snowcrab") ) {
     polydir = project.datadirectory("aegis", "polygons")
