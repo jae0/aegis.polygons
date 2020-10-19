@@ -119,6 +119,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(sppoly) ) # post 2014 is larger
     boundary = st_transform(boundary, st_crs(sppoly) )
+    boundary = st_cast(boundary, "POLYGON" )
 
     if (0) {
       #altenate way of determining boundary based upon data .. slower so turned off
@@ -133,7 +134,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
 
-     spmesh = aegis_mesh( SPDF=as(gfset, "Spatial"), SPDF_boundary=as(boundary, "Spatial"), resolution=areal_units_resolution_km,
+     spmesh = aegis_mesh( SPDF=as_Spatial(gfset), SPDF_boundary=as_Spatial(boundary), resolution=areal_units_resolution_km,
        spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
@@ -168,7 +169,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), boundary )
+      st_intersection( as( spmesh, "sf"), st_transform( boundary, st_crs(spmesh )) )
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
@@ -193,7 +194,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     snset = lonlat2planar(snset, areal_units_proj4string_planar_km)  # should not be required but to make sure
     snset = geo_subset( spatial_domain=spatial_domain, Z=snset )
 
-    snset =  st_as_sf ( snset, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
+    snset = st_as_sf ( snset, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
     snset = st_transform( snset, st_crs( areal_units_proj4string_planar_km ))
     # snset$AUID = snset$id
     # rownames( snset ) = snset$AUID
@@ -208,6 +209,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
     boundary = st_sfc( st_multipoint( as.matrix(boundary) ), crs=st_crs(areal_units_proj4string_planar_km)  )
+    boundary = st_cast(boundary, "POLYGON" )
 
     if (0) {
       # using sp, defunct
@@ -221,7 +223,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
 
-      spmesh = aegis_mesh( SPDF=as(snset, "Spatial"), SPDF_boundary=as(boundary, "Spatial"), resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons", boundary=boundary )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( SPDF=as_Spatial(snset), SPDF_boundary=as_Spatial(boundary), resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons"  )  # voroni tesslation and delaunay triagulation
+
     }
 
     if (areal_units_source == "snowcrab_polygons_inla_mesh" ) {
@@ -255,7 +258,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), st_transform( st_cast(boundary, "POLYGON" ), st_crs(spmesh )) )
+      st_intersection( as( spmesh, "sf"), st_transform( boundary, st_crs(spmesh )) )
       %>% st_simplify()
       %>% st_cast( "POLYGON" )
     )
@@ -406,7 +409,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # force saves as Spatial* data (for poly2nb, really)
   sppoly = st_make_valid(sppoly)
-  sppoly = as(sppoly, "Spatial")
+  sppoly = as_Spatial (sppoly )
 
   # poly* function operate on Spatial* data
   W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE)  # slow .. ~1hr?
