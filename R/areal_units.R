@@ -5,7 +5,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (0) {
     areal_units_timeperiod="default"
     plotit=FALSE
-    sa_threshold_km2=0
+    # sa_threshold_km2=0
     redo=FALSE
     use_stmv_solution=FALSE
   }
@@ -207,7 +207,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
     boundary = st_sfc( st_multipoint( as.matrix(boundary) ), crs=st_crs(areal_units_proj4string_planar_km)  )
-    boundary = st_transform( boundary, st_crs(sppoly ))
 
     if (0) {
       # using sp, defunct
@@ -255,7 +254,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), as(boundary, "sf") )
+      st_intersection( as( spmesh, "sf"), st_transform( boundary, st_crs(spmesh )) )
       %>% st_simplify()
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
