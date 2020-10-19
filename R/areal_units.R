@@ -133,7 +133,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
 
-     spmesh = aegis_mesh( SPDF=as(gfset, "Spatial"), resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
+     spmesh = aegis_mesh( SPDF=as(gfset, "Spatial"), SPDF_boundary=as(boundary, "Spatial"), resolution=areal_units_resolution_km,
+       spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
@@ -220,7 +221,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
 
-      spmesh = aegis_mesh( SPDF=as(snset, "Spatial"), resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( SPDF=as(snset, "Spatial"), SPDF_boundary=as(boundary, "Spatial"), resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons", boundary=boundary )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "snowcrab_polygons_inla_mesh" ) {
@@ -254,9 +255,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), st_transform( boundary, st_crs(spmesh )) )
+      st_intersection( as( spmesh, "sf"), st_transform( st_cast(boundary, "POLYGON" ), st_crs(spmesh )) )
       %>% st_simplify()
-      %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
 
