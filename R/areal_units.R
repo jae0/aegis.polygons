@@ -117,9 +117,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     locs = st_coordinates( gfset )
     locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
-    boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(sppoly) ) # post 2014 is larger
-    boundary = st_transform(boundary, st_crs(sppoly) )
-    boundary = st_cast(boundary, "POLYGON" )
+    boundary = (
+      maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
+      %>% st_cast("POLYGON" )
+      %>% st_make_valid()
+    )
 
     if (0) {
       #altenate way of determining boundary based upon data .. slower so turned off
@@ -208,8 +210,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     hull_multiplier = 6
 
     boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
-    boundary = st_sfc( st_multipoint( as.matrix(boundary) ), crs=st_crs(areal_units_proj4string_planar_km)  )
-    boundary = st_cast(boundary, "POLYGON" )
+    boundary = (
+      st_sfc( st_multipoint( as.matrix(boundary) ), crs=st_crs(areal_units_proj4string_planar_km)  )
+      %>% st_cast(boundary, "POLYGON" )
+      %>% st_make_valid()
+    )
 
     if (0) {
       # using sp, defunct
