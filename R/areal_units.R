@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", ... ) {
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", areal_units_force_nmin_constraint=FALSE,... ) {
 
   if (0) {
     areal_units_timeperiod="default"
@@ -102,6 +102,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   }
 
 
+  # ------------------------------------------------
+
 
   if (areal_units_source %in% c("groundfish_polygons_inla_mesh",  "groundfish_polygons_tesselation") ) {
 
@@ -136,8 +138,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
 
-     spmesh = aegis_mesh( SPDF=as_Spatial(gfset), SPDF_boundary=as_Spatial(boundary), resolution=areal_units_resolution_km,
-       spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons" )  # voroni tesslation and delaunay triagulation
+     spmesh = aegis_mesh( pts=gfset, boundary=boundary, resolution=areal_units_resolution_km,
+       spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr"  )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
@@ -193,7 +195,9 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (areal_units_source %in% c("snowcrab_polygons_inla_mesh",  "snowcrab_polygons_tesselation") ) {
 
     snset = snowcrab.db( p=p, DS="set.clean"  )  #
+    snset = snset[ , c("lon", "lat", "yr" )]
     snset = lonlat2planar(snset, areal_units_proj4string_planar_km)  # should not be required but to make sure
+
     snset = geo_subset( spatial_domain=spatial_domain, Z=snset )
 
     snset = st_as_sf ( snset, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
@@ -209,10 +213,9 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     spbuffer = 5
     hull_multiplier = 6
 
-    boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
     boundary = (
-      st_sfc( st_multipoint( as.matrix(boundary) ), crs=st_crs(areal_units_proj4string_planar_km)  )
-      %>% st_cast(boundary, "POLYGON" )
+      st_sfc( st_multipoint( as.matrix( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      %>% st_cast("POLYGON" )
       %>% st_make_valid()
     )
 
@@ -228,7 +231,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
 
-      spmesh = aegis_mesh( SPDF=as_Spatial(snset), SPDF_boundary=as_Spatial(boundary), resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr", output_type="polygons"  )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( pts=snset, boundary=boundary, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr",
+        fraction_cv = 0.5, fraction_good_bad = 0.9, nAU_min = 5  )  # voroni tesslation and delaunay triagulation
 
     }
 
@@ -263,7 +267,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     # must be done separately
     sppoly = (
-      st_intersection( as( spmesh, "sf"), st_transform( boundary, st_crs(spmesh )) )
+      st_intersection( st_sf(spmesh), st_transform( boundary, st_crs(spmesh )) )
       %>% st_simplify()
       %>% st_cast( "POLYGON" )
     )
@@ -344,7 +348,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       areal_units_constraint = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
     }
     if (any( areal_units_constraint %in% c("groundfish", "aegis.survey" ) )) {
-      areal_units_constraint = gfset = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
+      areal_units_constraint = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
     }
   }
 
@@ -362,7 +366,23 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     if (areal_units_constraint_nmin > 0 ) {
       sppoly$npts  = lengths( st_intersection( cst, sppoly ) )
       todrop = which( sppoly$npts < areal_units_constraint_nmin )
-      if (length(todrop) > 0 ) sppoly = sppoly[ - todrop, ]
+      if (length(todrop) > 0 ) {
+        if (areal_units_force_nmin_constraint ) {
+         sppoly = sppoly[ - todrop, ]
+        } else {
+          # try to join to adjacent au's
+          for (u in sort(todrop)) {
+            v = unlist( st_touches( sppoly[u,], sppoly) )
+            if (length(v) > 0) {
+              w = which.min( sppoly$npts[v] )
+              x = v[w]
+              gg = st_geometry(sppoly)[u]
+              sppoly = sppoly[-u,]
+              st_geometry(sppoly)[x] = st_union( st_geometry(sppoly)[x] , gg)
+            }
+          }
+        }
+      }
     }
   }
 
@@ -419,6 +439,13 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   # poly* function operate on Spatial* data
   W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE)  # slow .. ~1hr?
   W.remove = which(card(W.nb) == 0)
+
+
+  if (0) {
+    # https://cran.r-project.org/web/packages/spdep/vignettes/nb_sf.html
+     # sf::st_relate takes about 136 s. for a total of 139 s. to generate a queen neighbour object. The contiguity neighbour objects using st_queen
+  }
+
 
   if ( length(W.remove) > 0 ) {
     # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
