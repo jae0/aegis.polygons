@@ -377,8 +377,11 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
               w = which.min( sppoly$npts[v] )
               x = v[w]
               gg = st_geometry(sppoly)[u]
-              sppoly = sppoly[-u,]
-              st_geometry(sppoly)[x] = st_union( st_geometry(sppoly)[x] , gg)
+              hh = try(st_union( st_geometry(sppoly)[x] , gg))
+              if (!inherits(hh, "try-error")) {
+                st_geometry(sppoly)[x] = hh
+                sppoly = sppoly[-u,]
+              }
             }
           }
         }
