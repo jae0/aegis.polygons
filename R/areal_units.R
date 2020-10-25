@@ -358,42 +358,58 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # for other methods, this ensures a min no samples in each AU
     # todo:  convert to sf:: st_join
 
-    cst = st_sfc( st_multipoint( as.matrix(areal_units_constraint) ), crs=st_crs(projection_proj4string("lonlat_wgs84"))  )
+    cst = sf::st_as_sf( areal_units_constraint, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
     cst = st_transform( cst, st_crs(sppoly ))
     sppoly$internal_id = 1:nrow(sppoly)
-    sppolywithdata = st_intersection(  sppoly, cst )$internal_id  # all with at least 1
-    sppoly = sppoly[ match( sppolywithdata, sppoly$internal_id), ]
+    vv = unlist( st_intersects(cst, sppoly) )  # row indices of sppoly
+    ww = tapply( rep(1, length(vv)), vv, sum, na.rm=T )
+    sppoly$npts  = 0
+    sppoly$npts[ as.numeric(names(ww)) ] = ww[ match( as.character(sppoly$internal_id), names(ww) ) ]
     if (areal_units_constraint_nmin > 0 ) {
-      sppoly$npts  = lengths( st_intersection( cst, sppoly ) )
       todrop = which( sppoly$npts < areal_units_constraint_nmin )
+      message( "dropping due to areal_units_constraint_nmin: ", length(todrop) )
       if (length(todrop) > 0 ) {
         if (areal_units_force_nmin_constraint ) {
-         sppoly = sppoly[ - todrop, ]
-        } else {
-          # try to join to adjacent au's
-          for (u in sort(todrop)) {
-            v = unlist( st_touches( sppoly[u,], sppoly) )
-            if (length(v) > 0) {
-              w = which.min( sppoly$npts[v] )
-              x = v[w]
-              gg = st_geometry(sppoly)[u]
-              hh = try(st_union( st_geometry(sppoly)[x] , gg))
-              if (!inherits(hh, "try-error")) {
-                st_geometry(sppoly)[x] = hh
-                sppoly = sppoly[-u,]
+          sppoly = sppoly[ - todrop, ]
+          } else {
+            # try to join to adjacent au's
+            sppoly$nok = TRUE
+            sppoly$nok[todrop] = FALSE
+            row.names( sppoly) = sppoly$internal_id
+            W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
+
+            for (i in 1:nrow(sppoly)) {
+              if ( sppoly$nok[i]) next()
+              v = intersect( W.nb[[ i ]], which(sppoly$nok) )
+              if (length(v) > 0) {
+                j = v[ which.min( sppoly$npts[v] )]
+                g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+                if ( !inherits(g_ij, "try-error" )) {
+                  st_geometry(sppoly)[j] = g_ij
+                  sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+                  if ( sppoly$npts[j] > areal_units_constraint_nmin) sppoly$nok[j] = TRUE
+                }
               }
             }
+            sppoly = sppoly[ - which( !sppoly$nok ), ]
           }
-        }
-      }
+       }
     }
+    sppoly$internal_id = NULL
+    sppoly$nok =NULL
   }
+
+if (0) {
+  W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
+  plot(W.nb, st_geometry(sppoly))
+  edit.nb(W.nb, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
+
+}
 
   # --------------------
   # completed mostly, final filters where required
   if (!exists("AUID", sppoly)) {
     sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
-    # rownames(sppoly) = sppoly$AUID
   }
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
@@ -413,6 +429,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     message ( "No polygons meet the specified criteria (check sa_threshold_km2 ?)." )
     return (sppoly)
   }
+
+  message( "applying constraints: ",  nrow(sppoly) )
 
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
     # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
@@ -434,19 +452,17 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # ------------------------------------------------
 
-
-  # force saves as Spatial* data (for poly2nb, really)
   sppoly = st_make_valid(sppoly)
-  sppoly = as_Spatial (sppoly )
-
-  # poly* function operate on Spatial* data
-  W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE)  # slow .. ~1hr?
+  row.names(sppoly) = sppoly$AUID
+  W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
   W.remove = which(card(W.nb) == 0)
 
 
   if (0) {
     # https://cran.r-project.org/web/packages/spdep/vignettes/nb_sf.html
      # sf::st_relate takes about 136 s. for a total of 139 s. to generate a queen neighbour object. The contiguity neighbour objects using st_queen
+    edit(W.nb, polys=sppoly, use_region.id=TRUE)
+
   }
 
 
@@ -457,7 +473,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     sppoly = sppoly[W.keep,]
 
     row.names(sppoly) = sppoly$AUID
-    sppoly = sp::spChFIDs( sppoly, row.names(sppoly) )  #fix id's
     sppoly = sppoly[order(sppoly$AUID),]
   }
 
