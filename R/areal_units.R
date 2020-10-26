@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", areal_units_force_nmin_constraint=FALSE,... ) {
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", ... ) {
 
   if (0) {
     areal_units_timeperiod="default"
@@ -123,7 +123,12 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
+      %>% st_buffer( spbuffer )
+      %>% st_union()
+      %>% st_cast("POLYGON" )
+      %>% st_make_valid()
     )
+
 
     if (0) {
       #altenate way of determining boundary based upon data .. slower so turned off
@@ -214,10 +219,15 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     hull_multiplier = 6
 
     boundary = (
-      st_sfc( st_multipoint( as.matrix( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      %>% st_cast("POLYGON" )
+      %>% st_make_valid()
+      %>% st_buffer( spbuffer )
+      %>% st_union()
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
     )
+
 
     if (0) {
       # using sp, defunct
@@ -369,37 +379,36 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     zeros = which( sppoly$npts == 0 )
     if (length(zeros) > 0 ) sppoly = sppoly[-zeros,]
 
-    if (areal_units_constraint_nmin > 0 ) {
+#    if (0 ) {
       todrop = which( sppoly$npts < areal_units_constraint_nmin )
-      message( "dropping due to areal_units_constraint_nmin: ", length(todrop) )
       if (length(todrop) > 0 ) {
-        if (areal_units_force_nmin_constraint ) {
-          sppoly = sppoly[ - todrop, ]
-          } else {
             # try to join to adjacent au's
+            sppoly$dropflag = FALSE
             sppoly$nok = TRUE
             sppoly$nok[todrop] = FALSE
             row.names( sppoly) = sppoly$internal_id
             W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
             for (i in 1:nrow(sppoly)) {
               if ( sppoly$nok[i]) next()
-              v = intersect( W.nb[[ i ]], which(sppoly$nok) )
+              v = setdiff( intersect( W.nb[[ i ]], which(sppoly$nok) ), which(sppoly$dropflag ) )
               if (length(v) > 0) {
                 j = v[ which.min( sppoly$npts[v] )]
                 g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
                 if ( !inherits(g_ij, "try-error" )) {
                   st_geometry(sppoly)[j] = g_ij
                   sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-                  if ( sppoly$npts[j] > areal_units_constraint_nmin) sppoly$nok[j] = TRUE
+                  sppoly$nok[i] = FALSE
+                  sppoly$dropflag[i] = TRUE
+                  if ( sppoly$npts[j] >= areal_units_constraint_nmin) sppoly$nok[j] = TRUE
                 }
               }
             }
-            sppoly = sppoly[ - which( !sppoly$nok ), ]
-          }
+            sppoly = sppoly[ - which( sppoly$dropflag ), ]
        }
-    }
+ #   }
     sppoly$internal_id = NULL
     sppoly$nok =NULL
+    message( "Dropping due to areal_units_constraint_nmin, now there are : ", nrow(sppoly), " areal units." )
   }
 
 if (0) {
