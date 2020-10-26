@@ -365,6 +365,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     ww = tapply( rep(1, length(vv)), vv, sum, na.rm=T )
     sppoly$npts  = 0
     sppoly$npts[ as.numeric(names(ww)) ] = ww[ match( as.character(sppoly$internal_id), names(ww) ) ]
+
+    zeros = which( sppoly$npts == 0 )
+    if (length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+
     if (areal_units_constraint_nmin > 0 ) {
       todrop = which( sppoly$npts < areal_units_constraint_nmin )
       message( "dropping due to areal_units_constraint_nmin: ", length(todrop) )
@@ -377,7 +381,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
             sppoly$nok[todrop] = FALSE
             row.names( sppoly) = sppoly$internal_id
             W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
-
             for (i in 1:nrow(sppoly)) {
               if ( sppoly$nok[i]) next()
               v = intersect( W.nb[[ i ]], which(sppoly$nok) )
@@ -430,7 +433,7 @@ if (0) {
     return (sppoly)
   }
 
-  message( "applying constraints: ",  nrow(sppoly) )
+  message( "Applying constraints leaves: ",  nrow(sppoly), " areal units." )
 
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
     # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
