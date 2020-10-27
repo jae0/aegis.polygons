@@ -375,7 +375,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     ww = tapply( rep(1, length(vv)), vv, sum, na.rm=T )
     sppoly$npts  = 0
     sppoly$npts[ as.numeric(names(ww)) ] = ww[ match( as.character(sppoly$internal_id), names(ww) ) ]
-
+    sppoly$npts[ which(!is.finite(sppoly$npts))] = 0
     zeros = which( sppoly$npts == 0 )
     if (length(zeros) > 0 ) sppoly = sppoly[-zeros,]
 
