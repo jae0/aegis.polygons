@@ -123,7 +123,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
-      %>% st_buffer( spbuffer )
+      %>% st_buffer( areal_units_resolution_km )
       %>% st_union()
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
@@ -189,7 +189,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         as( coastline_db( p=p, DS="eastcoast_gadm" ), "sf")
         %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
         %>% st_simplify()
-        %>% st_buffer(0.1)
+        %>% st_buffer(areal_units_resolution_km / 10 )
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
@@ -222,7 +222,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
-      %>% st_buffer( spbuffer )
+      %>% st_buffer( areal_units_resolution_km )
       %>% st_union()
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
@@ -367,7 +367,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # already done in tessilation method so not really needed but
     # for other methods, this ensures a min no samples in each AU
     # todo:  convert to sf:: st_join
-
     cst = sf::st_as_sf( areal_units_constraint, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
     cst = st_transform( cst, st_crs(sppoly ))
     sppoly$internal_id = 1:nrow(sppoly)
@@ -377,46 +376,47 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     sppoly$npts[ as.numeric(names(ww)) ] = ww[ match( as.character(sppoly$internal_id), names(ww) ) ]
     sppoly$npts[ which(!is.finite(sppoly$npts))] = 0
     zeros = which( sppoly$npts == 0 )
-    if (length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+    todrop = which( sppoly$npts < areal_units_constraint_nmin )
+    if (length(todrop) > 0 ) {
 
-#    if (0 ) {
-      todrop = which( sppoly$npts < areal_units_constraint_nmin )
-      if (length(todrop) > 0 ) {
-            # try to join to adjacent au's
-            sppoly$dropflag = FALSE
-            sppoly$nok = TRUE
-            sppoly$nok[todrop] = FALSE
-            row.names( sppoly) = sppoly$internal_id
-            W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
-            for (i in 1:nrow(sppoly)) {
-              if ( sppoly$nok[i]) next()
-              v = setdiff( intersect( W.nb[[ i ]], which(sppoly$nok) ), which(sppoly$dropflag ) )
-              if (length(v) > 0) {
-                j = v[ which.min( sppoly$npts[v] )]
-                g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
-                if ( !inherits(g_ij, "try-error" )) {
-                  st_geometry(sppoly)[j] = g_ij
-                  sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-                  sppoly$nok[i] = FALSE
-                  sppoly$dropflag[i] = TRUE
-                  if ( sppoly$npts[j] >= areal_units_constraint_nmin) sppoly$nok[j] = TRUE
-                }
-              }
+      if (areal_units_source == "lattice" ) {
+        sppoly = sppoly[ -todrop , ]
+      } else {
+        # try to join to adjacent au's
+        sppoly$dropflag = FALSE
+        sppoly$nok = TRUE
+        sppoly$nok[todrop] = FALSE
+        row.names( sppoly) = sppoly$internal_id
+        W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
+        for (i in 1:nrow(sppoly)) {
+          if ( sppoly$nok[i]) next()
+          v = setdiff( intersect( W.nb[[ i ]], which(sppoly$nok) ), which(sppoly$dropflag ) )
+          if (length(v) > 0) {
+            j = v[ which.min( sppoly$npts[v] )]
+            g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+            if ( !inherits(g_ij, "try-error" )) {
+              st_geometry(sppoly)[j] = g_ij
+              sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+              sppoly$nok[i] = FALSE
+              sppoly$dropflag[i] = TRUE
+              if ( sppoly$npts[j] >= areal_units_constraint_nmin) sppoly$nok[j] = TRUE
             }
-            sppoly = sppoly[ - which( sppoly$dropflag ), ]
-       }
- #   }
+          }
+        }
+        sppoly = sppoly[ - which( sppoly$dropflag ), ]
+        sppoly$nok =NULL
+      }
+    }
     sppoly$internal_id = NULL
-    sppoly$nok =NULL
     message( "Dropping due to areal_units_constraint_nmin, now there are : ", nrow(sppoly), " areal units." )
   }
 
-if (0) {
-  W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
-  plot(W.nb, st_geometry(sppoly))
-  edit.nb(W.nb, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
-
-}
+  if (0) {
+    W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
+    plot(W.nb, st_geometry(sppoly))
+    edit.nb(W.nb, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
+  }
 
   # --------------------
   # completed mostly, final filters where required
