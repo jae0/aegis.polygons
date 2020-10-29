@@ -85,6 +85,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     sppoly = as( sppoly, "sf")
 
+
   }
 
 
@@ -142,9 +143,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     }
 
     if (areal_units_source == "groundfish_polygons_tesselation" ) {
-
-     spmesh = aegis_mesh( pts=gfset, boundary=boundary, resolution=areal_units_resolution_km,
-       spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr"  )  # voroni tesslation and delaunay triagulation
+      spmesh = aegis_mesh( pts=gfset, boundary=boundary, resolution=areal_units_resolution_km,
+        spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr"  )  # voroni tesslation and delaunay triagulation
     }
 
     if (areal_units_source == "groundfish_polygons_inla_mesh" ) {
@@ -175,7 +175,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       )
     }
 
-
     # must be done separately
     sppoly = (
       st_intersection( as( spmesh, "sf"), st_transform( boundary, st_crs(spmesh )) )
@@ -183,7 +182,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_cast( "POLYGON" )
     )
 
-  #  remove.coastline
+    #  remove.coastline
     require(aegis.coastline)
     coast = (
         as( coastline_db( p=p, DS="eastcoast_gadm" ), "sf")
@@ -193,6 +192,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
+
 
   }
 
@@ -230,7 +230,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
 
     if (0) {
-      # using sp, defunct
+      # using sp (above), this method is now defunct
       boundary = non_convex_hull( locs, alpha=spbuffer*hull_multiplier  )
       boundary = list( Polygons(list( Polygon( as.matrix( boundary ) )), ID="boundary" ))
       boundary = SpatialPolygons( boundary, proj4string=sp::CRS(projection_proj4string("utm20")) )
@@ -240,11 +240,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
 
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
-
       spmesh = aegis_mesh( pts=snset, boundary=boundary, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr",
         fraction_cv = 0.5, fraction_good_bad = 0.9, nAU_min = 5  )  # voroni tesslation and delaunay triagulation
-
     }
+
 
     if (areal_units_source == "snowcrab_polygons_inla_mesh" ) {
 
@@ -337,18 +336,21 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   }
 
-  # --------------------
 
+
+
+
+
+  # --------------------
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
     # main domain/boundary
     sppoly = (
       st_intersection(
         sppoly,
-        st_transform(maritimes_fishery_boundary( DS="maritimes", internal_resolution_km=0.1, crs_km=st_crs(areal_units_proj4string_planar_km) ), st_crs(sppoly) ) )
+        st_transform(maritimes_fishery_boundary( DS="maritimes", internal_resolution_km=areal_units_resolution_km / 10, crs_km=st_crs(areal_units_proj4string_planar_km) ), st_crs(sppoly) ) )
       %>% st_simplify()
     )
   }
-
 
   # --------------------
 
@@ -363,27 +365,27 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   }
 
   if (inherits( areal_units_constraint, c("data.frame", "matrix") ) ) {
-    # this part done as a "Spatial" object
-    # already done in tessilation method so not really needed but
-    # for other methods, this ensures a min no samples in each AU
-    # todo:  convert to sf:: st_join
     cst = sf::st_as_sf( areal_units_constraint, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
     cst = st_transform( cst, st_crs(sppoly ))
     sppoly$internal_id = 1:nrow(sppoly)
-    vv = unlist( st_intersects(cst, sppoly) )  # row indices of sppoly
-    ww = tapply( rep(1, length(vv)), vv, sum, na.rm=T )
+    cst = st_join( cst, sppoly, join=st_within )
+    ww = tapply( rep(1, nrow(cst)), cst$internal_id, sum, na.rm=T )
     sppoly$npts  = 0
-    sppoly$npts[ as.numeric(names(ww)) ] = ww[ match( as.character(sppoly$internal_id), names(ww) ) ]
-    sppoly$npts[ which(!is.finite(sppoly$npts))] = 0
+    sppoly$npts[ as.numeric(names(ww))] = ww
     zeros = which( sppoly$npts == 0 )
     if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
     todrop = which( sppoly$npts < areal_units_constraint_nmin )
+
     if (length(todrop) > 0 ) {
 
       if (areal_units_source == "lattice" ) {
+        # laatice structure is required, ssimply drop where there is no data
         sppoly = sppoly[ -todrop , ]
+
       } else {
+        # already done in tessilation method (spmesh) so not really needed but
         # try to join to adjacent au's
+        # for other methods, this ensures a min no samples in each AU
         sppoly$dropflag = FALSE
         sppoly$nok = TRUE
         sppoly$nok[todrop] = FALSE
@@ -420,16 +422,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # --------------------
   # completed mostly, final filters where required
-  if (!exists("AUID", sppoly)) {
-    sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
-  }
+  if (!exists("AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
   sppoly$au_sa_km2 = st_area(sppoly)
-
-  # plot(st_geometry(sppoly))
-  # plot(sppoly[,"au_sa_km2"])
-
   attributes( sppoly$au_sa_km2 ) = NULL
   if ( sa_threshold_km2 == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
