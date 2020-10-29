@@ -365,11 +365,13 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   }
 
   if (inherits( areal_units_constraint, c("data.frame", "matrix") ) ) {
-    cst = sf::st_as_sf( areal_units_constraint, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
-    cst = st_transform( cst, st_crs(sppoly ))
+    areal_units_constraint = sf::st_as_sf( areal_units_constraint, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
+    areal_units_constraint = st_transform( areal_units_constraint, st_crs(sppoly ))
     sppoly$internal_id = 1:nrow(sppoly)
-    cst = st_join( cst, sppoly, join=st_within )
-    ww = tapply( rep(1, nrow(cst)), cst$internal_id, sum, na.rm=T )
+    # areal_units_constraint = st_join( areal_units_constraint, sppoly, join=st_within )
+    areal_units_constraint$internal_id = st_points_in_polygons( areal_units_constraint, sppoly, varname="internal_id" )
+    ww = tapply( rep(1, nrow(areal_units_constraint)), areal_units_constraint$internal_id, sum, na.rm=T )
+    areal_units_constraint = NULL
     sppoly$npts  = 0
     sppoly$npts[ as.numeric(names(ww))] = ww
     zeros = which( sppoly$npts == 0 )
