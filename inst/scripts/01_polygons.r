@@ -69,4 +69,11 @@ for ( areal_units_resolution_km in c(5, 10, 20, 25) ) {
   scotianshelf = polygon_db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" )
 
   # Access method 4: one step data and plot it too
-  scotianshelf = polygon_db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p, plotmap=TRUE ) # p contains the extent
+  scotianshelf = polygon_db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km", p=p ) # p contains the extent
+
+    u = maps::map( database="worldHires", regions=p$regions, xlim=p$xlim, ylim=p$ylim, fill=FALSE, plot=FALSE )
+    v = data.frame( cbind( u$x, u$y) )
+    w = sf::sf_project( pts=as.matrix(v), from=sf::st_crs("EPSG:4326"), to=project_to )
+    plot( w, pch=".", col="gray", xlab="Easting", ylab="Northing")
+    plot( scotianshelf, col="green", add=TRUE)
+

@@ -28,7 +28,7 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
 
   if (DS %in% c("maritimes", "snowcrab") ) {
     boundary = (
-      as( polygon_managementareas( species="maritimes" ) , "sf" )
+      polygon_managementareas( species="maritimes" )
       %>% st_transform( st_crs(sppoly) )
       %>% st_simplify()
       %>% st_buffer(0.1)
@@ -39,7 +39,7 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
 
   if (DS=="groundfish") {
     if ( areal_units_timeperiod=="default") areal_units_timeperiod = "pre2014"
-    boundary = as( maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" ), "sf")
+    boundary = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" )
     internal_resolution_km = 1 # anything smaler gives incomplete polygons
   }
 

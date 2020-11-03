@@ -1,8 +1,9 @@
 
 maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre2014", shapefilelocation=NULL, returntype="polygons") {
-  # create a SpatialPolygons of the groundfish strata used in Martimes Region of Canada
+  # create a sf SpatialPolygons of the groundfish strata used in Martimes Region of Canada
   require(maptools)
   require(rgdal)
+  require(sf)
 
   # if (is.null(shapefilelocation)) shapefilelocation=system.file("data", package="carstm", mustWork=TRUE)
   if (is.null(shapefilelocation)) shapefilelocation=project.datadirectory("aegis", "polygons", "Management_Areas", "Fisheries", "Groundfish")
@@ -12,56 +13,57 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
     if (areal_units_timeperiod=="pre2014") {
       shapefilename = "GB_STRATA_VDC"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-      o1 = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
-      names(o1) = "AUID"
+      o1 = st_read( dsn=shapefilelocation, layer=shapefilename, crs=crswgs84)
+      names(o1) = c( "AUID", "geometry")
 
       todrop = which(o1$AUID %in% c("5Z1", "5Z2") ) # drop as they are also in o2
       o1 = o1[-todrop,]
 
       shapefilename = "GF_SUMMER_STRATA_VDC"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-      o2 = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
-      names(o2) = "AUID"
+      o2 = st_read( dsn=shapefilelocation, layer=shapefilename, crs=crswgs84 )
+      names(o2) = c( "AUID", "geometry" )
 
       groundfish_strata = rbind(o1, o2)
-      class(groundfish_strata) = class(o1)
 
       # i = which( ! st_is_valid(groundfish_strata) )
-      # 38 overlaps with 40
-      require(sf)
-      groundfish_strata = as( groundfish_strata, "sf")
       groundfish_strata = st_make_valid(groundfish_strata)
       st_geometry(groundfish_strata[40,]) = st_difference( st_geometry(groundfish_strata[40,]), st_geometry(groundfish_strata[38,]))
       groundfish_strata = st_make_valid(groundfish_strata)
-      groundfish_strata = as( groundfish_strata, "Spatial")
 
-      attr(groundfish_strata, "region.id") = as.character( slot(groundfish_strata, "data")[,"AUID"] )
+      attr(groundfish_strata, "region.id") = as.character( groundfish_strata[,"AUID"] )
 
-      # plot(groundfish_strata)
+      if (0) {
+        plot(st_geometry( groundfish_strata) )
+        plot(st_geometry(groundfish_strata[38,]), col="blue", add=T)
+        plot(st_geometry(groundfish_strata[40,]), col="red", add=T)
+      }
+
       return(groundfish_strata)
     }
 
     if (areal_units_timeperiod=="post2014") {
       shapefilename = "MaritimesRegionEcosystemAssessmentStrata"
       crswgs84 = "+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
-      groundfish_strata = rgdal::readOGR( dsn=shapefilelocation, layer=shapefilename, p4s=crswgs84 )
-      names(groundfish_strata) = "AUID"
+      groundfish_strata = st_read( dsn=shapefilelocation, layer=shapefilename, crs=crswgs84 )
+      names(groundfish_strata) = c( "AUID", "geometry")
 
-      require(sf)
-      groundfish_strata = as( groundfish_strata, "sf")
-      groundfish_strata = st_make_valid(groundfish_strata)
+      message( "Strata 70, 71, 72 in Misaine Banks are not contiguous .. this can be problematic")
+
       # i = which( ! st_is_valid(groundfish_strata) )
-      # groundfish_strata = st_make_valid(groundfish_strata)
-      groundfish_strata = as( groundfish_strata, "Spatial")
-
-      # plot(groundfish_strata)
-      attr(groundfish_strata, "region.id") = as.character( slot(groundfish_strata, "data")[,"AUID"] )
+      groundfish_strata = st_make_valid(groundfish_strata)
+      attr(groundfish_strata, "region.id") = as.character( groundfish_strata[,"AUID"] )
 
       return( groundfish_strata)
     }
   }
 
   if (returntype=="neighbourhoods") {
+
+    if (is.null(W.nb)) {
+      sppoly = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" )
+      W.nb = spdep::poly2nb(sppoly, row.names=sppoly[,"AUID"], queen=TRUE )
+    }
 
     if (areal_units_timeperiod=="pre2014") {
       if (0){
@@ -70,7 +72,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
         plot(sppoly)
         plot(sppoly[isolated,], add=T, col="red")
         dev.new()
-        edit(W.nb, polys=sppoly)
+        edit(W.nb, polys=as(sppoly, "Spatial"))
         card(W.nb) # last check if any more  isolated areas
       }
 
@@ -104,13 +106,11 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
     }
 
     if (areal_units_timeperiod=="post2014") {
-      sppoly = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" )
-      W.nb = spdep::poly2nb(sppoly, row.names=rownames(slot(sppoly, "data")[,"AUID"] ) )
       if (0){
         # polys look ok
         plot(sppoly)
         dev.new()
-        edit(W.nb, polys=sppoly)
+        edit(W.nb, polys=as(sppoly, "Spatial") )
         card(W.nb) # last check if any more  isolated areas
       }
       return( W.nb )

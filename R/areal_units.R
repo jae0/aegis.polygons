@@ -57,12 +57,24 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     if (use_stmv_solution) {
-      sppoly = aegis_db_spatial_object(
-        spatial_domain=spatial_domain,
-        proj4string=areal_units_proj4string_planar_km,
-        areal_units_resolution_km=areal_units_resolution_km,
-        returntype="SpatialPolygonsDataFrame"
-      )
+      pn = spatial_parameters( spatial_domain=spatial_domain )
+
+      bathymetry = bathymetry_db( p=pn, DS="complete" )
+      bathymetry = geo_subset( spatial_domain=spatial_domain, Z=bathymetry )
+
+      spdf0 = SpatialPoints(bathymetry[, c("plon", "plat")], proj4string=sp::CRS(areal_units_proj4string_planar_km) )
+
+      raster_template = raster(extent(spdf0)) # +1 to increase the area
+      res(raster_template) = areal_units_resolution_km  # in units of crs (which should be in  km)
+      crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
+
+      sppoly = rasterize( bathymetry[, c("plon", "plat")], raster_template, field=bathymetry$z )
+      sppoly = as(sppoly, "SpatialPixelsDataFrame")
+      sppoly = as(sppoly, "SpatialPolygonsDataFrame")
+      sppoly$AUID = as.character( 1:length(sppoly) )  # row index
+      row.names(sppoly) = sppoly$AUID
+
+      rm( bathymetry, spdf0)
 
     } else {
 
@@ -448,7 +460,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
       print(subarea)
       csa = polygon_managementareas( species="snowcrab", area=subarea )
-      csa = as(csa, "sf")
       csa = st_transform( csa, sp::CRS( areal_units_proj4string_planar_km ) )
       ooo = st_intersection( csa, sppoly )
       ooo$surfacearea = st_area( ooo )

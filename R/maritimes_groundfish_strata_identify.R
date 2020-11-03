@@ -13,11 +13,15 @@
           # set = merge(all.sets, st, by.x="strat", by.y="stratum.strat", all.x=TRUE, all.y=FALSE, suffixes=c("", ".gsstratum") )
 
 
-    pts <- SpatialPoints(Y[,xyvars], proj4string=CRS(proj4string( sppoly)) )
 
-    # match each datum to an area
-    o = over( pts, sppoly)
-    Y$AUID = as.character( o$AUID )
+    crs_lonlat = st_crs(projection_proj4string("lonlat_wgs84"))
+    sppoly = st_transform(sppoly, crs=crs_lonlat )
+
+    Y$AUID = st_points_in_polygons(
+      pts = st_as_sf( Y[,xyvars], coords=c("lon","lat"), crs=crs_lonlat ),
+      polys = sppoly[, "AUID"],
+      varname="AUID"
+    )
 
     sppoly = spTransform(sppoly, sp::CRS(planar_crs_km) )  # "+proj=utm +ellps=WGS84 +zone=20 +units=km"
     sppoly$au_sa_km2 = gArea(sppoly, byid=TRUE) # km^2  .. planar_crs_km should be in km units
@@ -41,10 +45,9 @@
     if (plotdata) {
       nomatches = which(is.na(Y$AUID))
       plot(sppoly)
-      plot( pts, pch=20, col="green", add=TRUE)
+      plot( Y, pch=20, col="green", add=TRUE)
       if (length(nomatches) >0) {
-        pts2 <- SpatialPoints(Y[nomatches, xyvars], proj4string=CRS(proj4string( sppoly)) )
-        plot( pts2, col="red", add=TRUE )
+        plot( st_as_sf( Y[nomatches, xyvars], coords=c("lon","lat"), crs=crs_lonlat ), col="red", add=TRUE )
       }
     }
     return(Y)

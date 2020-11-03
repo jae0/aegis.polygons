@@ -26,7 +26,7 @@ polygon_internal_code = function (area=NULL) {
       if (a=="5y") r=c("nafo.5y")
       if (a=="5z") r=c("nafo.5z")
 			if (a=="canada.east") {
-				r=c("nafo.2j", "nafo.3k", "nafo.3l", "nafo.3n", "nafo.3o", 
+				r=c("nafo.2j", "nafo.3k", "nafo.3l", "nafo.3n", "nafo.3o",
 						"nafo.4r", "nafo.4s", "nafo.4v", "nafo.4w", "nafo.4x",
 						"nafo.5ze", "nafo.5zw"
 			  )

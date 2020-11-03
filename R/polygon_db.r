@@ -1,5 +1,5 @@
 
-polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
+polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE, returntype="sf" ) {
   #\\ create/extract polygons and/or return on a map
   #\\ if project_to is passed, default storage/load CRS is assumed lonlat
   #\\ default return value is lon/lat in data frame, also possible to return as a polygon
@@ -20,27 +20,25 @@ polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
     }
     X = read.table (fn)
     colnames( X ) = c("lon", "lat" )
-    if ( as.character(project_to) != projection_proj4string("lonlat_wgs84") ) {
-      YY = X
-      coordinates(YY) = ~lon+lat
-      proj4string( YY) =  projection_proj4string("lonlat_wgs84")
-      Z = spTransform( YY, sp::CRS(project_to) )
-      X = coordinates(Z)
-    }
-    if (plotmap) {
-      if ( as.character(project_to) != projection_proj4string("lonlat_wgs84")  ) {
-        polygon_db( DS="map.background", p=p)
-      } else {
-        u = maps::map( database="worldHires", regions=p$regions, xlim=p$xlim, ylim=p$ylim, fill=FALSE, plot=FALSE )
-        v = data.frame( cbind( u$x, u$y) )
 
-        # w = rgdal::project( as.matrix(v), proj=as.character(project_to) )
-        w = sf::sf_project( from=sf::st_crs("EPSG:4326"), to=project_to, pts=as.matrix(v) )
+    proj4lonlat = projection_proj4string("lonlat_wgs84")
 
-        plot (w, pch=".", col="gray", xlab="Easting", ylab="Northing")
-      }
-      lines(X, col="green")
+    if (returntype=="sp") {
+      coordinates(X) = ~lon+lat
+      proj4string( X) =  proj4lonlat
+      X = coordinates(X)
     }
+
+    if (returntype=="sf") {
+      X = (
+        as.matrix( X )
+        %>% st_multipoint()
+        %>% st_sfc( crs=st_crs(proj4lonlat) )
+        %>% st_cast("POLYGON" )
+        %>% st_make_valid()
+      )
+    }
+
     return( X )
   }
 
@@ -60,11 +58,6 @@ polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
     }
     write.table( X, file=save.filename )
     return ("save completed")
-  }
-
-
-  if (DS %in% c("snowcrab")) {
-
   }
 
 }

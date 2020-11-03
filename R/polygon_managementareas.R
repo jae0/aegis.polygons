@@ -1,5 +1,5 @@
 
-polygon_managementareas = function( species="maritimes", area="cfaall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" ) {
+polygon_managementareas = function( species="maritimes", area="cfaall", redo=FALSE, project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km", returntype="sf" ) {
 
   if (species %in% c("maritimes", "snowcrab") ) {
     polydir = project.datadirectory("aegis", "polygons")
@@ -11,31 +11,34 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
 
     if (!redo) {
       if (file.exists(fn)) load(fn)
-      if( !is.null(shp) ) return(shp)
+      if( !is.null(shp) ) {
+        if (returntype=="sp") as( shp, "Spatial")
+        return(shp)
+      }
     }
 
-    w = list()
+    w = NULL
     for (su in aegis.polygons::polygon_internal_code(area)) {
-      v = aegis.polygons::polygon_db( polyid=su  )
-      vp = Polygon( as.matrix( v ) )
-      w = c( w, list( Polygons(list(vp), ID=su )) )
+      v = st_as_sf( polygon_db( polyid=su, returntype="sf"  ) )
+      v[, "ID"] = su
+      w = rbind( w, v )
     }
 
-    wsp = SpatialPolygons( w, proj4string=sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") )  # expect lon/lat
-    wsp = spTransform( wsp, sp::CRS(project_to) )
-    wsp = as(wsp, "sf")
+    wsp = st_transform( w, st_crs(project_to) )
     wsp = st_simplify(wsp)
     wsp = st_buffer(wsp, 0.1)
 
     coast = coastline_db( p=p, DS="eastcoast_gadm" )
-    coast = spTransform( coast, sp::CRS(project_to) )
-    coast = as( coast, "sf")
+    coast = st_transform( coast, st_crs(project_to) )
     coast = st_simplify(coast)
     coast = st_buffer(coast, 0.1)
 
     shp = st_difference( st_buffer( st_union( wsp), 0.2), st_union(coast) )
-    shp = spTransform( as( shp, "Spatial" ), sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs") )
+    shp = st_transform( shp, st_crs(projection_proj4string("lonlat_wgs84")) )
+
     save(shp, file=fn, compress=TRUE)
+
+    if (returntype=="sp") as( shp, "Spatial")
     return(shp)
 
     plot(shp)
