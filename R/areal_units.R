@@ -107,9 +107,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
-    sppoly = maritimes_groundfish_strata( areal_units_timeperiod=ifelse( areal_units_timeperiod=="default", "pre2014", areal_units_timeperiod ), returntype="polygons" )
+    sppoly = maritimes_groundfish_strata( areal_units_timeperiod=ifelse( areal_units_timeperiod=="default", "pre2014", areal_units_timeperiod ) )
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
-    sppoly = as(sppoly, "sf")
     sppoly$AUID = as.character(sppoly$AUID)
     row.names(sppoly) = sppoly$AUID
   }
@@ -310,7 +309,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
 
-    gf = as( maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" ), "sf")
+    gf = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod )
     gf = st_make_valid(gf)
     gf = st_transform(gf, st_crs(sppoly) )
     gf$gfUID = as.character(gf$AUID)
@@ -460,7 +459,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
       print(subarea)
       csa = polygon_managementareas( species="snowcrab", area=subarea )
-      csa = st_transform( csa, sp::CRS( areal_units_proj4string_planar_km ) )
+      csa = st_transform( csa, st_crs( areal_units_proj4string_planar_km ) )
       ooo = st_intersection( csa, sppoly )
       ooo$surfacearea = st_area( ooo )
       vn = paste(subarea, "surfacearea", sep="_")

@@ -23,10 +23,10 @@
       varname="AUID"
     )
 
-    sppoly = spTransform(sppoly, sp::CRS(planar_crs_km) )  # "+proj=utm +ellps=WGS84 +zone=20 +units=km"
-    sppoly$au_sa_km2 = gArea(sppoly, byid=TRUE) # km^2  .. planar_crs_km should be in km units
+    sppoly = st_transform(sppoly, st_crs(planar_crs_km) )  # "+proj=utm +ellps=WGS84 +zone=20 +units=km"
+    sppoly$au_sa_km2 = st_area(sppoly) # km^2  .. planar_crs_km should be in km units
 
-    Y = merge(Y, slot(sppoly, "data"), all.x=TRUE, all.y=FALSE)
+    Y = merge(Y, st_drop_geometry(sppoly), all.x=TRUE, all.y=FALSE)
 
     st = aegis.survey::groundfish_survey_db(DS="gsstratum")
     names(st) = paste("stratum", names(st), sep=".")
