@@ -1,5 +1,5 @@
 
-polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE, returntype="sf" ) {
+polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_proj4string("lonlat_wgs84"), plotmap=FALSE ) {
   #\\ create/extract polygons and/or return on a map
   #\\ if project_to is passed, default storage/load CRS is assumed lonlat
   #\\ default return value is lon/lat in data frame, also possible to return as a polygon
@@ -20,25 +20,13 @@ polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
     }
     X = read.table (fn)
     colnames( X ) = c("lon", "lat" )
-
-    proj4lonlat = projection_proj4string("lonlat_wgs84")
-
-    if (returntype=="sp") {
-      coordinates(X) = ~lon+lat
-      proj4string( X) =  proj4lonlat
-      X = coordinates(X)
-    }
-
-    if (returntype=="sf") {
-      X = (
-        as.matrix( X )
-        %>% st_multipoint()
-        %>% st_sfc( crs=st_crs(proj4lonlat) )
-        %>% st_cast("POLYGON" )
-        %>% st_make_valid()
-      )
-    }
-
+    X = (
+      as.matrix( X )
+      %>% st_multipoint()
+      %>% st_sfc( crs=st_crs(projection_proj4string("lonlat_wgs84")) )
+      %>% st_cast("POLYGON" )
+      %>% st_make_valid()
+    )
     return( X )
   }
 

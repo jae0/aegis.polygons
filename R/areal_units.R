@@ -197,7 +197,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     #  remove.coastline
     require(aegis.coastline)
     coast = (
-        as( coastline_db( p=p, DS="eastcoast_gadm" ), "sf")
+        coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
         %>% st_simplify()
         %>% st_buffer(areal_units_resolution_km / 10 )
