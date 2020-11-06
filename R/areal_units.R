@@ -48,7 +48,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       load(areal_units_fn_full)
       # message( "Using areal units specified in ", areal_units_fn_full)
     }
-    if( !is.null(sppoly) ) return(sppoly)
+    if ( !is.null(sppoly) ) return(sppoly)
   }
 
   message( "Creating/over-writing areal units specified in ", areal_units_fn_full)
@@ -57,47 +57,18 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     if (use_stmv_solution) {
-      pn = spatial_parameters( spatial_domain=spatial_domain )
-
-      bathymetry = bathymetry_db( p=pn, DS="complete" )
-      bathymetry = geo_subset( spatial_domain=spatial_domain, Z=bathymetry )
-
-      spdf0 = SpatialPoints(bathymetry[, c("plon", "plat")], proj4string=sp::CRS(areal_units_proj4string_planar_km) )
-
-      raster_template = raster(extent(spdf0)) # +1 to increase the area
-      res(raster_template) = areal_units_resolution_km  # in units of crs (which should be in  km)
-      crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
-
-      sppoly = rasterize( bathymetry[, c("plon", "plat")], raster_template, field=bathymetry$z )
-      sppoly = as(sppoly, "SpatialPixelsDataFrame")
-      sppoly = as(sppoly, "SpatialPolygonsDataFrame")
-      sppoly$AUID = as.character( 1:length(sppoly) )  # row index
-      row.names(sppoly) = sppoly$AUID
-
-      rm( bathymetry, spdf0)
-
+      Z = bathymetry_db( p=p, DS="complete" )
+      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
     } else {
-
       # as points/grids
-      pn = spatial_parameters( spatial_domain=spatial_domain )
-      Z = bathymetry_db( p=pn, DS="aggregated_data" )
+      Z = bathymetry_db( p=p, DS="aggregated_data")  # force 1 km res
       names(Z)[which(names(Z)=="z.mean" )] = "z"
-      Z = lonlat2planar(Z, pn$aegis_proj4string_planar_km)  # should not be required but to make sure
-      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )  # position and depth filters
-      spdf0 = SpatialPointsDataFrame(Z[, c("plon", "plat")], data=Z, proj4string=sp::CRS(pn$aegis_proj4string_planar_km) )
-
-      require(raster)
-      raster_template = raster(extent(spdf0)) # +1 to increase the area
-      res(raster_template) = areal_units_resolution_km  # in units of crs (which should be in  km)
-      crs(raster_template) = projection(spdf0) # transfer the coordinate system to the raster
-
-      sppoly = rasterize( spdf0[, c("plon", "plat")], raster_template, field=spdf0$z )
-      sppoly = as(sppoly, "SpatialPolygonsDataFrame")
+      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
     }
-
-    sppoly = as( sppoly, "sf")
-
-
+    Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( areal_units_proj4string_planar_km ) )
+    sppoly = st_as_sf( st_make_grid( Z, cellsize=areal_units_resolution_km,  what="polygons", square=TRUE ) )
+    sppoly$AUID = as.character( 1:nrow(sppoly) )  # row index
+    row.names(sppoly) = sppoly$AUID
   }
 
 
