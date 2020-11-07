@@ -74,6 +74,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       sppoly$AUID = as.character( 1:nrow(sppoly) )  # row index
       row.names(sppoly) = sppoly$AUID
     } else if (rastermethod=="raster") {
+      require(raster)
       raster_template = raster::raster(extent(Z), res=areal_units_resolution_km, crs=projection(Z) ) # +1 to increase the area
       sppoly = raster::rasterize( Z, raster_template, field=Z$z )
       sppoly = as(sppoly, "SpatialPixelsDataFrame")
