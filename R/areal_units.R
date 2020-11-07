@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, areal_units_constraint="none", ... ) {
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, rastermethod="raster", areal_units_constraint="none", ... ) {
 
   if (0) {
     areal_units_timeperiod="default"
@@ -8,6 +8,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # sa_threshold_km2=0
     redo=FALSE
     use_stmv_solution=FALSE
+    using_st_grid = FALSE
   }
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
@@ -48,7 +49,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       load(areal_units_fn_full)
       # message( "Using areal units specified in ", areal_units_fn_full)
     }
-    if ( !is.null(sppoly) ) return(sppoly)
+    if( !is.null(sppoly) ) return(sppoly)
   }
 
   message( "Creating/over-writing areal units specified in ", areal_units_fn_full)
@@ -58,17 +59,26 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # static features only so far
     if (use_stmv_solution) {
       Z = bathymetry_db( p=p, DS="complete" )
-      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
     } else {
       # as points/grids
-      Z = bathymetry_db( p=p, DS="aggregated_data")  # force 1 km res
+      Z = bathymetry_db( p=p, DS="aggregated_data" )
       names(Z)[which(names(Z)=="z.mean" )] = "z"
+      # Z = lonlat2planar(Z, p$aegis_proj4string_planar_km)  # should not be required but to make sure
       Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
     }
     Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( areal_units_proj4string_planar_km ) )
-    sppoly = st_as_sf( st_make_grid( Z, cellsize=areal_units_resolution_km,  what="polygons", square=TRUE ) )
-    sppoly$AUID = as.character( 1:nrow(sppoly) )  # row index
-    row.names(sppoly) = sppoly$AUID
+    if (rastermethod=="sf") {
+      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
+      Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( areal_units_proj4string_planar_km ) )
+      sppoly = st_as_sf( st_make_grid( Z, cellsize=areal_units_resolution_km,  what="polygons", square=TRUE ) )
+      sppoly$AUID = as.character( 1:nrow(sppoly) )  # row index
+      row.names(sppoly) = sppoly$AUID
+    } else if (rastermethod=="raster") {
+      raster_template = raster::raster(extent(Z), res=areal_units_resolution_km, crs=projection(Z) ) # +1 to increase the area
+      sppoly = raster::rasterize( Z, raster_template, field=Z$z )
+      sppoly = as(sppoly, "SpatialPixelsDataFrame")
+      sppoly = as( as(sppoly, "SpatialPolygonsDataFrame"), "sf")
+    }
   }
 
 
