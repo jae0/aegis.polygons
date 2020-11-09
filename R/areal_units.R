@@ -81,13 +81,14 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     }
     Z = NULL
 
+
     #  remove.coastline
     require(aegis.coastline)
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
         %>% st_simplify()
-        %>% st_buffer(areal_units_resolution_km / 10 )
+        %>% st_buffer(aegis_internal_resolution_km )
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
@@ -196,7 +197,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
         %>% st_simplify()
-        %>% st_buffer(areal_units_resolution_km / 10 )
+        %>% st_buffer(aegis_internal_resolution_km )
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
@@ -298,7 +299,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
         %>% st_simplify()
-        %>% st_buffer(areal_units_resolution_km / 10 )
+        %>% st_buffer(aegis_internal_resolution_km )
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
