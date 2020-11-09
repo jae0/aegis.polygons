@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, rastermethod="raster", areal_units_constraint="none", ... ) {
+areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, rastermethod="sf", areal_units_constraint="none", ... ) {
 
   if (0) {
     areal_units_timeperiod="default"
