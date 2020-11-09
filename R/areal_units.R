@@ -80,6 +80,19 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       raster_template = NULL
     }
     Z = NULL
+
+    #  remove.coastline
+    require(aegis.coastline)
+    coast = (
+        coastline_db( p=p, DS="eastcoast_gadm" )
+        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
+        %>% st_simplify()
+        %>% st_buffer(areal_units_resolution_km / 10 )
+        %>% st_union()
+    )
+    sppoly = st_difference( sppoly, coast)
+    coast = NULL
+
   }
 
 
@@ -177,7 +190,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     )
     spmesh=NULL
     boundary = NULL
-
     #  remove.coastline
     require(aegis.coastline)
     coast = (
@@ -189,6 +201,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     )
     sppoly = st_difference( sppoly, coast)
     coast = NULL
+
   }
 
 
@@ -279,6 +292,17 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     )
     spmesh = NULL
     boundary = NULL
+    #  remove.coastline
+    require(aegis.coastline)
+    coast = (
+        coastline_db( p=p, DS="eastcoast_gadm" )
+        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
+        %>% st_simplify()
+        %>% st_buffer(areal_units_resolution_km / 10 )
+        %>% st_union()
+    )
+    sppoly = st_difference( sppoly, coast)
+    coast = NULL
   }
 
   if (is.null(sppoly)) stop( "areal_units_source was not recognized!")
@@ -336,9 +360,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     sppoly$AUID = paste( sppoly$AUID , sppoly$gfUID, sep="_")
 
   }
-
-
-
 
 
 
@@ -425,6 +446,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   # --------------------
   # completed mostly, final filters where required
+
+
   if (!exists("AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
 
   sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
