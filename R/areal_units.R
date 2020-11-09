@@ -64,12 +64,10 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       Z = bathymetry_db( p=p, DS="aggregated_data" )
       names(Z)[which(names(Z)=="z.mean" )] = "z"
       # Z = lonlat2planar(Z, p$aegis_proj4string_planar_km)  # should not be required but to make sure
-      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
     }
     Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( areal_units_proj4string_planar_km ) )
+    Z = Z[ geo_subset( spatial_domain=spatial_domain, Z=Z ), ]
     if (rastermethod=="sf") {
-      Z = geo_subset( spatial_domain=spatial_domain, Z=Z )
-      Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( areal_units_proj4string_planar_km ) )
       sppoly = st_as_sf( st_make_grid( Z, cellsize=areal_units_resolution_km,  what="polygons", square=TRUE ) )
       sppoly$AUID = as.character( 1:nrow(sppoly) )  # row index
       row.names(sppoly) = sppoly$AUID
@@ -79,7 +77,9 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       sppoly = raster::rasterize( Z, raster_template, field=Z$z )
       sppoly = as(sppoly, "SpatialPixelsDataFrame")
       sppoly = as( as(sppoly, "SpatialPolygonsDataFrame"), "sf")
+      raster_template = NULL
     }
+    Z = NULL
   }
 
 
@@ -104,7 +104,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     ## method 1: Voronoi triangulation
     gfset = survey_db( DS="set.base", p=p )
     gfset = lonlat2planar(gfset, areal_units_proj4string_planar_km)  # should not be required but to make sure
-    gfset = geo_subset( spatial_domain=spatial_domain, Z=gfset )
+    gfset = gfset[ geo_subset( spatial_domain=spatial_domain, Z=gfset ), ]
     gfset$AUID = gfset$id
 
     gfset =  st_as_sf ( gfset, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
@@ -112,6 +112,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
     locs = st_coordinates( gfset )
     locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
+    gfset = NULL
 
     boundary = (
       maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
@@ -122,7 +123,6 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
     )
-
 
     if (0) {
       #altenate way of determining boundary based upon data .. slower so turned off
@@ -167,6 +167,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         match.ID = FALSE
       )
     }
+    locs = NULL
 
     # must be done separately
     sppoly = (
@@ -174,6 +175,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
+    spmesh=NULL
+    boundary = NULL
 
     #  remove.coastline
     require(aegis.coastline)
@@ -185,8 +188,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
-
-
+    coast = NULL
   }
 
 
@@ -196,7 +198,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     snset = snset[ , c("lon", "lat", "yr" )]
     snset = lonlat2planar(snset, areal_units_proj4string_planar_km)  # should not be required but to make sure
 
-    snset = geo_subset( spatial_domain=spatial_domain, Z=snset )
+    snset = snset[ geo_subset( spatial_domain=spatial_domain, Z=snset ), ]
 
     snset = st_as_sf ( snset, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
     snset = st_transform( snset, st_crs( areal_units_proj4string_planar_km ))
@@ -235,6 +237,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     if (areal_units_source == "snowcrab_polygons_tesselation" ) {
       spmesh = aegis_mesh( pts=snset, boundary=boundary, resolution=areal_units_resolution_km, spbuffer=areal_units_resolution_km, areal_units_constraint_nmin=areal_units_constraint_nmin, tus="yr",
         fraction_cv = 0.5, fraction_good_bad = 0.9, nAU_min = 5  )  # voroni tesslation and delaunay triagulation
+      snset = NULL
     }
 
 
@@ -266,6 +269,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
         match.ID = FALSE
       )
     }
+    locs = NULL
 
     # must be done separately
     sppoly = (
@@ -273,7 +277,8 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_simplify()
       %>% st_cast( "POLYGON" )
     )
-
+    spmesh = NULL
+    boundary = NULL
   }
 
   if (is.null(sppoly)) stop( "areal_units_source was not recognized!")
@@ -311,10 +316,12 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
+    boundary = NULL
 
     sppoly = (
       st_join( st_sf(sppoly), gf, join=st_intersects,  largest=TRUE )
     )
+    gf = NULL
 
     # recover the data from sp0
     sppoly = (
@@ -323,6 +330,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
+    sp0 = NULL
     sppoly = st_make_valid(sppoly)
     sppoly$index = sppoly$AUID
     sppoly$AUID = paste( sppoly$AUID , sppoly$gfUID, sep="_")
