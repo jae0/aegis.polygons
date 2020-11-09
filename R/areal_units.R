@@ -85,7 +85,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     require(aegis.coastline)
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
-        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
+        %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
         %>% st_simplify()
         %>% st_buffer(areal_units_resolution_km / 10 )
         %>% st_union()
@@ -194,7 +194,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     require(aegis.coastline)
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
-        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
+        %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
         %>% st_simplify()
         %>% st_buffer(areal_units_resolution_km / 10 )
         %>% st_union()
@@ -296,7 +296,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     require(aegis.coastline)
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
-        %>% st_transform( sp::CRS( areal_units_proj4string_planar_km ))
+        %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
         %>% st_simplify()
         %>% st_buffer(areal_units_resolution_km / 10 )
         %>% st_union()
@@ -450,7 +450,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   if (!exists("AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
 
-  sppoly = st_transform( sppoly, sp::CRS( areal_units_proj4string_planar_km ))
+  sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
   sppoly$au_sa_km2 = st_area(sppoly)
   attributes( sppoly$au_sa_km2 ) = NULL
   if ( sa_threshold_km2 == 0 ) {
