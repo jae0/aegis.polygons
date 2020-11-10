@@ -5,7 +5,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (0) {
     areal_units_timeperiod="default"
     plotit=FALSE
-    # sa_threshold_km2=0
+    sa_threshold_km2=0
     redo=FALSE
     use_stmv_solution=FALSE
     using_st_grid = FALSE
@@ -13,14 +13,14 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
-  aegis_internal_resolution_km = ifelse (exists("aegis_internal_resolution_km", p), p$aegis_internal_resolution_km, 1 )
+  areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 25 )
+  aegis_internal_resolution_km = ifelse (exists("aegis_internal_resolution_km", p), p$aegis_internal_resolution_km, min(1, areal_units_resolution_km) )
   areal_units_proj4string_planar_km =  ifelse (exists("areal_units_proj4string_planar_km", p), p$areal_units_proj4string_planar_km, "+proj=utm +ellps=WGS84 +zone=20 +units=km" )
 
 
   # these are required:
   spatial_domain =  ifelse (exists("spatial_domain", p), p$spatial_domain, "SSE" )
   areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
-  areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 25 )
   areal_units_source =  ifelse (exists("areal_units_source", p), p$areal_units_source, "lattice" )
   areal_units_timeperiod =  ifelse (exists("areal_units_timeperiod", p), p$areal_units_timeperiod, "default" )
   areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
