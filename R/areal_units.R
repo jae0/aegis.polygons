@@ -454,7 +454,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
   sppoly$au_sa_km2 = st_area(sppoly)
   attributes( sppoly$au_sa_km2 ) = NULL
-  if ( sa_threshold_km2 == 0 ) {
+  if ( sa_threshold_km2  == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
   }
   toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
