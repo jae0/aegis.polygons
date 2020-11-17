@@ -23,7 +23,7 @@ polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
     X = (
       as.matrix( X )
       %>% st_multipoint()
-      %>% st_sfc( crs=st_crs(projection_proj4string("lonlat_wgs84")) )
+      %>% st_sfc( crs=st_crs(project_to) )
       %>% st_cast("POLYGON" )
       %>% st_make_valid()
     )
