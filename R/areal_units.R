@@ -58,10 +58,14 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
     # res based on grids ... rather than arbitrary polygons
     # static features only so far
     if (use_stmv_solution) {
-      Z = bathymetry_db( p=p, DS="complete" )
+      pB = bathymetry_parameters( spatial_domain=p$spatial_domain, project_class="stmv" )
+      Z = bathymetry_db( p=pB, DS="complete" )
+
     } else {
+      pB = bathymetry_parameters( spatial_domain=p$spatial_domain, project_class="core"  )  # default is the "best" performing method
+
       # as points/grids
-      Z = bathymetry_db( p=p, DS="aggregated_data" )
+      Z = bathymetry_db( p=pB, DS="aggregated_data" )
       names(Z)[which(names(Z)=="z.mean" )] = "z"
       # Z = lonlat2planar(Z, p$aegis_proj4string_planar_km)  # should not be required but to make sure
     }
@@ -116,6 +120,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
   if (areal_units_source %in% c("groundfish_polygons_inla_mesh",  "groundfish_polygons_tesselation") ) {
 
     ## method 1: Voronoi triangulation
+    # p expected to make sense
     gfset = survey_db( DS="set.base", p=p )
     gfset = lonlat2planar(gfset, areal_units_proj4string_planar_km)  # should not be required but to make sure
     gfset = gfset[ geo_subset( spatial_domain=spatial_domain, Z=gfset ), ]
@@ -207,6 +212,7 @@ areal_units = function( p=NULL,  plotit=FALSE, sa_threshold_km2=0, redo=FALSE, u
 
 
   if (areal_units_source %in% c("snowcrab_polygons_inla_mesh",  "snowcrab_polygons_tesselation") ) {
+    # p expected to make sense
 
     snset = snowcrab.db( p=p, DS="set.clean"  )  #
     snset = snset[ , c("lon", "lat", "yr" )]
