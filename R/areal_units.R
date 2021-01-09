@@ -218,7 +218,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( st_crs( p$areal_units_proj4string_planar_km ))
         %>% st_simplify()
-        %>% st_buffer(aegis_internal_resolution_km )
+        %>% st_buffer(p$aegis_internal_resolution_km )
         %>% st_union()
     )
     sppoly = st_difference( sppoly, coast)
