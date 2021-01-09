@@ -127,7 +127,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     }
 
 
-    if (p$project_name == "snowcrab") {
+    if (p$project_name == "bio.snowcrab") {
       xydata = snowcrab.db( p=p, DS="set.clean"  )  #
       xydata = xydata[ , c("lon", "lat", "yr" )]
       xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
@@ -204,8 +204,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   if (is.null(sppoly)) stop()
 
 
-      
-    # must be done separately
+  if (!is.null(boundary)) {
+    # must be done separately (after all areal)unit_types has been processed)
     sppoly = (
       st_intersection( st_sf(sppoly), st_transform( boundary, st_crs(sppoly )) )
       %>% st_simplify()
@@ -213,8 +213,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       %>% st_cast( "POLYGON" )
     )
     boundary = NULL
-    
-      
+  }  
+
     #  remove.coastline
     require(aegis.coastline)
     coast = (
