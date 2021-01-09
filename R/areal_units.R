@@ -16,6 +16,21 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   # areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )
   # areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
 
+  # areal_units_type:  "tessilation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh" 
+  # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
+
+  areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 25 )
+  aegis_internal_resolution_km = ifelse (exists("aegis_internal_resolution_km", p), p$aegis_internal_resolution_km, min(1, areal_units_resolution_km) )
+  areal_units_proj4string_planar_km =  ifelse (exists("areal_units_proj4string_planar_km", p), p$areal_units_proj4string_planar_km, p$aegis_proj4string_planar_km )
+
+  # these are required:
+  project_name =  ifelse (exists("project_name", p), p$project_name, "default" )
+  spatial_domain =  ifelse (exists("spatial_domain", p), p$spatial_domain, "SSE" )
+  areal_units_type =  ifelse (exists("areal_units_type", p), p$areal_units_type, "tessilation" )
+  areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
+  areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
+  areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)
+
   if (is.null(areal_units_fn_full)) areal_units_fn_full = aegis.polygons::areal_units_filename( p=p )
     
 
@@ -101,7 +116,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   
 
 
-    if (p$project_name == "groundfish") {
+    if (p$project_name == "survey") {
       xydata = survey_db( DS="set.base", p=p )
       xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
       xydata$AUID = xydata$id
