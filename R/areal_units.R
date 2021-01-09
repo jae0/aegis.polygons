@@ -300,8 +300,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
         print(subarea)
         csa = polygon_managementareas( species="snowcrab", area=subarea )
-        csa = st_transform( csa, st_crs( areal_units_proj4string_planar_km ) )
-        ooo = st_intersection( csa, sppoly )
+        csa = st_transform( st_as_sf(csa), st_crs( areal_units_proj4string_planar_km ) )
+        ooo = st_intersection( csa, sppoly ) 
         ooo$surfacearea = st_area( ooo )
         vn = paste(subarea, "surfacearea", sep="_")
         sppoly[[ vn ]] = 0
