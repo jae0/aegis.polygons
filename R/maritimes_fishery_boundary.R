@@ -38,7 +38,6 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
   }
 
   if (DS=="groundfish") {
-    if ( areal_units_timeperiod=="default") areal_units_timeperiod = "pre2014"
     boundary = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod )
     internal_resolution_km = 1 # anything smaler gives incomplete polygons
   }
