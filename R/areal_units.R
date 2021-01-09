@@ -78,10 +78,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     # }
 
     if (p$project_name == "temperature") {
-      xydata = temperature.db( p=p, DS="set.clean"  )  #
+      xydata = temperature.db( p=p, DS="bottom.all"  )  #
       xydata = xydata[ , c("lon", "lat", "yr" )]
       xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = xydata[ geo_subset( spatial_domain=p$spatial_domain, Z=xydata ), ]
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
       xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
 
@@ -105,7 +104,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     if (p$project_name == "groundfish") {
       xydata = survey_db( DS="set.base", p=p )
       xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = xydata[ geo_subset( spatial_domain=p$spatial_domain, Z=xydata ), ]
       xydata$AUID = xydata$id
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
       xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
@@ -129,9 +127,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
     if (p$project_name == "bio.snowcrab") {
       xydata = snowcrab.db( p=p, DS="set.clean"  )  #
-      xydata = xydata[ , c("lon", "lat", "yr" )]
+      xydata = xydata[ , c("lon", "lat", "yr"  )]
       xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = xydata[ geo_subset( spatial_domain=p$spatial_domain, Z=xydata ), ]
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
       xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
 
