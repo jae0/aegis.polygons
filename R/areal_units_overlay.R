@@ -1,5 +1,5 @@
 
-areal_units_overlay = function( sppoly, areal_units_overlay, aegis_internal_resolution_km, areal_units_resolution_km, areal_units_proj4string_planar_km, areal_units_timeperiod="pre2014" ) {
+areal_units_overlay = function( sppoly, areal_units_overlay, inputdata_spatial_discretization_planar_km, areal_units_resolution_km, areal_units_proj4string_planar_km, areal_units_timeperiod="pre2014" ) {
 
 
   if ( grepl("groundfish_strata", areal_units_overlay) ) {
@@ -18,7 +18,7 @@ areal_units_overlay = function( sppoly, areal_units_overlay, aegis_internal_reso
     row.names(gf) = gf$gfUID
 
 
-    boundary = maritimes_groundfish_boundary( areal_units_timeperiod=areal_units_timeperiod, internal_resolution_km=aegis_internal_resolution_km, crs_km=st_crs(sppoly) )
+    boundary = maritimes_groundfish_boundary( areal_units_timeperiod=areal_units_timeperiod, internal_resolution_km=inputdata_spatial_discretization_planar_km, crs_km=st_crs(sppoly) )
     boundary = st_transform(boundary, st_crs(sppoly) )
 
     sp0 = sppoly
