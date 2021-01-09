@@ -41,7 +41,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
    
   # ------------------------------------------------
 
-  if (areal_units_type %in% c( "stratanal_polygons_pre2014", "stratanal_polygons", "groundfish_strata")  ) {
+  if (p$areal_units_type %in% c( "stratanal_polygons_pre2014", "stratanal_polygons", "groundfish_strata")  ) {
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
@@ -53,7 +53,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   }
 
 
-  if (areal_units_type %in% c( "stratanal_polygons_post2014")  ) {
+  if (p$areal_units_type %in% c( "stratanal_polygons_post2014")  ) {
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
