@@ -26,8 +26,8 @@ areal_units_filename = function(p, areal_units_directory = project.datadirectory
     areal_units_resolution_km,
     areal_units_constraint,
     areal_units_constraint_nmin,
-    paste0(areal_units_overlay, collapse="_"),
-    sep="_"
+    paste0(areal_units_overlay, collapse="|"),
+    sep="~"
   )
   
   areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )

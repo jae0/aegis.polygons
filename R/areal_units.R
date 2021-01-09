@@ -31,7 +31,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   if ( p$areal_units_type == "lattice" ) {
     sppoly = aegis.polygons::areal_units_lattice(
-      spatial_domain = p$spatial.domain, 
+      spatial_domain = p$spatial_domain, 
       areal_units_resolution_km=p$areal_units_resolution_km, 
       areal_units_proj4string_planar_km=p$areal_units_proj4string_planar_km ,
       rastermethod = rastermethod,
@@ -70,25 +70,25 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   if (is.null(xydata)) {
     # if (p$project_name == "aegis") {
     #   xydata = survey_db( DS="filter", p=p )
-    #   xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
+    #   xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
     #   xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
     #   xydata$AUID = xydata$id
     #   xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-    #   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
+    #   xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
     # }
 
     if (p$project_name == "temperature") {
       xydata = temperature.db( p=p, DS="set.clean"  )  #
       xydata = xydata[ , c("lon", "lat", "yr" )]
-      xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
+      xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
+      xydata = xydata[ geo_subset( spatial_domain=p$spatial_domain, Z=xydata ), ]
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-      xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
+      xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
 
       locs = st_coordinates( xydata )
       locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
-      boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(p$areal_units_proj4string_planar_km) )
 
       # aegis_mesh tweaks
       tus="yr"
@@ -104,17 +104,17 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
     if (p$project_name == "groundfish") {
       xydata = survey_db( DS="set.base", p=p )
-      xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
+      xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
+      xydata = xydata[ geo_subset( spatial_domain=p$spatial_domain, Z=xydata ), ]
       xydata$AUID = xydata$id
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-      xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
+      xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
       
       locs = st_coordinates( xydata )
       locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
       boundary = 
-        maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
+        maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(p$areal_units_proj4string_planar_km) ) # post 2014 is larger
 
       # aegis_mesh defaults
       tus="yr"
@@ -130,15 +130,15 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     if (p$project_name == "snowcrab") {
       xydata = snowcrab.db( p=p, DS="set.clean"  )  #
       xydata = xydata[ , c("lon", "lat", "yr" )]
-      xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
+      xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
+      xydata = xydata[ geo_subset( spatial_domain=p$spatial_domain, Z=xydata ), ]
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-      xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
+      xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
 
       locs = st_coordinates( xydata )
       locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
 
-      boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(p$areal_units_proj4string_planar_km) )
 
       # aegis_mesh tweaks
       tus="yr"
@@ -154,10 +154,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     # if (p$project_name == "snowcrab_biological_data") {
     #   xydata = snowcrab.db( p=p, DS="biological_data"  )  #
     #   xydata = xydata[ , c("lon", "lat", "yr" )]
-    #   xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
+    #   xydata = lonlat2planar(xydata, p$areal_units_proj4string_planar_km)  # should not be required but to make sure
     #   xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
     #   xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-    #   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
+    #   xydata = st_transform( xydata, st_crs( p$areal_units_proj4string_planar_km ))
     # }
 
   }  ## end xydata
@@ -167,7 +167,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         boundary
         %>% st_cast("POLYGON" )
         %>% st_make_valid()
-        %>% st_buffer( areal_units_resolution_km )
+        %>% st_buffer( p$areal_units_resolution_km )
         %>% st_union()
         %>% st_cast("POLYGON" )
         %>% st_make_valid()
@@ -219,7 +219,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     require(aegis.coastline)
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
-        %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
+        %>% st_transform( st_crs( p$areal_units_proj4string_planar_km ))
         %>% st_simplify()
         %>% st_buffer(aegis_internal_resolution_km )
         %>% st_union()
@@ -292,7 +292,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   sppoly = st_make_valid(sppoly)
   row.names(sppoly) = sppoly$AUID
-  W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
+  W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=p$areal_units_resolution_km )  # slow .. ~1hr?
   W.remove = which(card(W.nb) == 0)
 
 
@@ -314,15 +314,15 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   }
 
   attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
-  attr(sppoly, "spatial_domain") = spatial_domain
-  attr(sppoly, "areal_units_fn") = areal_units_fn
+  attr(sppoly, "spatial_domain") = p$spatial_domain
+  attr(sppoly, "areal_units_directory") = dirname(areal_units_fn_full)
+  attr(sppoly, "areal_units_fn") = basename(areal_units_fn_full)
   attr(sppoly, "areal_units_fn_full") = areal_units_fn_full
-  attr(sppoly, "areal_units_directory") = areal_units_directory
-  attr(sppoly, "areal_units_overlay") = areal_units_overlay
-  attr(sppoly, "areal_units_resolution_km") = areal_units_resolution_km
-  attr(sppoly, "areal_units_type") = areal_units_type
-  attr(sppoly, "areal_units_constraint") = areal_units_constraint 
-  attr(sppoly, "areal_units_constraint_nmin") = areal_units_constraint_nmin
+  attr(sppoly, "areal_units_overlay") = p$areal_units_overlay
+  attr(sppoly, "areal_units_resolution_km") = p$areal_units_resolution_km
+  attr(sppoly, "areal_units_type") = p$areal_units_type
+  attr(sppoly, "areal_units_constraint") = p$areal_units_constraint 
+  attr(sppoly, "areal_units_constraint_nmin") = p$areal_units_constraint_nmin
 
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
 
