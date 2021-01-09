@@ -276,6 +276,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sppoly=sppoly, 
     areal_units_type = areal_units_type,
     areal_units_constraint_nmin = areal_units_constraint_nmin,
+    areal_units_proj4string_planar_km=areal_units_proj4string_planar_km,
     sa_threshold_km2 = sa_threshold_km2, 
     constraintdata = constraintdata 
   ) 
