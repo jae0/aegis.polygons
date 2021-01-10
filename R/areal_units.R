@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=FALSE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, ... ) {
+areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -56,7 +56,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   message( "Creating areal units:", areal_units_fn_full)
 
   if ( areal_units_type == "lattice" ) {
-    sppoly = aegis.polygons::areal_units_lattice(
+    sppoly = areal_units_lattice(
       spatial_domain = spatial_domain, 
       areal_units_resolution_km=areal_units_resolution_km, 
       areal_units_proj4string_planar_km=areal_units_proj4string_planar_km ,
@@ -199,7 +199,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
 
     if ( areal_units_type == "inla_mesh" ) {
-      sppoly = aegis.polygons::areal_units_inla_mesh(
+      sppoly = areal_units_inla_mesh(
         locs=locs, 
         areal_units_resolution_km=areal_units_resolution_km, 
         areal_units_proj4string_planar_km=areal_units_proj4string_planar_km 
@@ -208,7 +208,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
 
     if ( areal_units_type == "tesselation" ) {
-      sppoly = aegis.polygons::aegis_mesh( 
+      sppoly = aegis_mesh( 
         pts=xydata, 
         boundary=boundary, 
         resolution=areal_units_resolution_km, 

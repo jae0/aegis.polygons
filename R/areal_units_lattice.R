@@ -1,5 +1,5 @@
 
-areal_units_lattice = function(spatial_domain, areal_units_resolution_km, areal_units_proj4string_planar_km, use_stmv_solution=FALSE,rastermethod="sf" ) {
+areal_units_lattice = function(spatial_domain, areal_units_resolution_km, areal_units_proj4string_planar_km, use_stmv_solution=TRUE, rastermethod="sf" ) {
 
      # res based on grids ... rather than arbitrary polygons
     # static features only so far
