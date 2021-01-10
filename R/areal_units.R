@@ -104,7 +104,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     # }
 
     if (project_name == "temperature") {
-      xydata = temperature.db( p=p, DS="bottom.all"  )  #
+      xydata = temperature_db( p=p, DS="bottom.all"  )  #
       xydata = xydata[ , c("lon", "lat", "yr" )]
       xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
