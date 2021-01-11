@@ -61,7 +61,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       areal_units_resolution_km=areal_units_resolution_km, 
       areal_units_proj4string_planar_km=areal_units_proj4string_planar_km ,
       rastermethod = rastermethod,
-      use_stmv_solution=FALSE
+      use_stmv_solution=use_stmv_solution
     )
   }
    
@@ -282,60 +282,61 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   ) 
 
 
-  if (0) {
-    W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
-    plot(W.nb, st_geometry(sppoly))
-    edit.nb(W.nb, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
-  }
 
   # --------------------
   # completed mostly, final filters where required
 
-  # ------------------------------------------------
-  # overalys of other areal units not directly related to AU's ( eg. large management areas /zones
-  # ... but they require SA estimates after any filters (above))
-    if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
-      # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
-      message("Computing surface areas for each subarea ... can be slow if this is your first time")
-      for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
-        print(subarea)
-        csa = polygon_managementareas( species="snowcrab", area=subarea )
-        csa = st_transform( st_as_sf(csa), st_crs( areal_units_proj4string_planar_km ) )
-        ooo = st_intersection( csa, sppoly ) 
-        ooo$surfacearea = st_area( ooo )
-        vn = paste(subarea, "surfacearea", sep="_")
-        sppoly[[ vn ]] = 0
-        j = match( ooo$AUID, sppoly$AUID )
-        if (length(j) > 0)  sppoly[[ vn ]][j] = ooo$surfacearea
-      }
-    }
-
-
-    # ------------------------------------------------
-
 
   sppoly = st_make_valid(sppoly)
+  if (!exists( "AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
   row.names(sppoly) = sppoly$AUID
   W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
   W.remove = which(card(W.nb) == 0)
-
-
-  if (0) {
-    # https://cran.r-project.org/web/packages/spdep/vignettes/nb_sf.html
-     # sf::st_relate takes about 136 s. for a total of 139 s. to generate a queen neighbour object. The contiguity neighbour objects using st_queen
-    edit(W.nb, polys=sppoly, use_region.id=TRUE)
-  }
-
 
   if ( length(W.remove) > 0 ) {
     # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
     W.keep = which(card(W.nb) > 0)
     W.nb = nb_remove( W.nb, W.remove )
     sppoly = sppoly[W.keep,]
-
     row.names(sppoly) = sppoly$AUID
     sppoly = sppoly[order(sppoly$AUID),]
   }
+
+
+
+  if (0) {
+    W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
+    plot(W.nb, st_geometry(sppoly))
+    edit.nb(W.nb, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
+
+    # https://cran.r-project.org/web/packages/spdep/vignettes/nb_sf.html
+     # sf::st_relate takes about 136 s. for a total of 139 s. to generate a queen neighbour object. The contiguity neighbour objects using st_queen
+    edit(W.nb, polys=sppoly, use_region.id=TRUE)
+  }
+
+
+# ------------------------------------------------
+# overalys of other areal units not directly related to AU's ( eg. large management areas /zones
+# ... but they require SA estimates after any filters (above))
+  if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
+    # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
+    message("Computing surface areas for each subarea ... can be slow if this is your first time")
+    for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
+      print(subarea)
+      csa = polygon_managementareas( species="snowcrab", area=subarea )
+      csa = st_transform( st_as_sf(csa), st_crs( areal_units_proj4string_planar_km ) )
+      ooo = st_intersection( csa, sppoly ) 
+      ooo$surfacearea = st_area( ooo )
+      vn = paste(subarea, "surfacearea", sep="_")
+      sppoly[[ vn ]] = 0
+      j = match( ooo$AUID, sppoly$AUID )
+      if (length(j) > 0)  sppoly[[ vn ]][j] = ooo$surfacearea
+    }
+  }
+
+
+    # ------------------------------------------------
+
 
   attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
   attr(sppoly, "project_name") = project_name
