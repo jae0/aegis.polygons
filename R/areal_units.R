@@ -1,12 +1,13 @@
 
 
-areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, ... ) {
+areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, ... ) {
 
   if (0) {
     plotit=FALSE
     sa_threshold_km2=0
     redo=FALSE
-    use_stmv_solution=FALSE
+    use_stmv_solution=TRUE
     spbuffer=5
     hull_multiplier = 6
   }
@@ -102,11 +103,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   if (project_name == "survey") {
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
   } else {
-    res_crude = p$pres * 10
-    locs[,1] = aegis_floor(locs[,1] / res_crude + 1 ) * res_crude
-    locs[,2] = aegis_floor(locs[,2] / res_crude + 1 ) * res_crude
-    locs = unique( st_coordinates( xydata ) )
-    boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+    boundary = st_sfc( st_multipoint( non_convex_hull( 
+      st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
+      alpha=spbuffer*hull_multiplier  
+    ) ), crs=st_crs(areal_units_proj4string_planar_km) )
   }
  
   
@@ -146,6 +146,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         nAU_min = p$nAU_min   # stoppping criterion: allow no less than this number of areal units
       )  # voroni tesslation and delaunay triagulation
     }
+    
     
     xydata = NULL
   
