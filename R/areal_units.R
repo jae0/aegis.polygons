@@ -95,10 +95,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   # ------------------------------------------------
   if (is.null(xydata)) {
-     if (exists("xydata", p)) assign("xydata", eval(parse(text=p$areal_units_xydata) ) )
+    if (exists("xydata", p)) {
+       assign("xydata", eval(parse(text=p$areal_units_xydata) ) )
     } else {
-      message( "To create areal units, xydata is required.")
-      stop()
+        message( "To create areal units, xydata is required.")
+        stop()
     }
   }
 
