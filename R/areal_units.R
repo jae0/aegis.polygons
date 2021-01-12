@@ -94,97 +94,22 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   # ------------------------------------------------
   if (is.null(xydata)) {
-    # if (project_name == "aegis") {
-    #   xydata = survey_db( DS="filter", p=p )
-    #   xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-    #   xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
-    #   xydata$AUID = xydata$id
-    #   xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-    #   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
-    # }
+    message( "To create areal units, xydata is required.")
+    stop()
+  }
 
-    if (project_name == "temperature") {
-      xydata = temperature_db( p=p, DS="bottom.all"  )  #
-      xydata = xydata[ , c("lon", "lat", "yr" )]
-      xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-      xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
 
-      locs = st_coordinates( xydata )
-      locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
-
-      boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
-
-      # aegis_mesh tweaks
-      tus="yr"
-      fraction_cv = 0.5 
-      fraction_good_bad = 0.9 
-      nAU_min = 5  
-
-      areal_units_timeperiod = "none"
+  if (project_name == "survey") {
+    boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
+  } else {
+    res_crude = p$pres * 10
+    locs[,1] = aegis_floor(locs[,1] / res_crude + 1 ) * res_crude
+    locs[,2] = aegis_floor(locs[,2] / res_crude + 1 ) * res_crude
+    locs = unique( st_coordinates( xydata ) )
+    boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+  }
+ 
   
-    }
-  
-
-
-    if (project_name == "survey") {
-      xydata = survey_db( DS="set.base", p=p )
-      xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata$AUID = xydata$id
-      xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-      xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
-      
-      locs = st_coordinates( xydata )
-      locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
-
-      boundary = 
-        maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
-
-      # aegis_mesh defaults
-      tus="yr"
-      fraction_cv=1.0
-      fraction_good_bad=0.8
-      nAU_min=5
-
-      areal_units_timeperiod = "pre2014"
-
-    }
-
-
-    if (project_name == "bio.snowcrab") {
-      xydata = snowcrab.db( p=p, DS="set.clean"  )  #
-      xydata = xydata[ , c("lon", "lat", "yr"  )]
-      xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-      xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-      xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
-
-      locs = st_coordinates( xydata )
-      locs = locs + runif( nrow(locs)*2, min=-1e-3, max=1e-3 ) # add  noise  to prevent a race condition
-
-      boundary = st_sfc( st_multipoint( non_convex_hull( locs, alpha=spbuffer*hull_multiplier  ) ), crs=st_crs(areal_units_proj4string_planar_km) )
-
-      # aegis_mesh tweaks
-      tus="yr"
-      fraction_cv = 0.5 
-      fraction_good_bad = 0.9 
-      nAU_min = 5  
-
-      areal_units_timeperiod = "none"
-  
-    }
-  
-
-    # if (project_name == "snowcrab_biological_data") {
-    #   xydata = snowcrab.db( p=p, DS="biological_data"  )  #
-    #   xydata = xydata[ , c("lon", "lat", "yr" )]
-    #   xydata = lonlat2planar(xydata, areal_units_proj4string_planar_km)  # should not be required but to make sure
-    #   xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ), ]
-    #   xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
-    #   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
-    # }
-
-  }  ## end xydata
-
   if (!is.null(boundary)) {
       boundary = (
         boundary
@@ -200,11 +125,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
     if ( areal_units_type == "inla_mesh" ) {
       sppoly = areal_units_inla_mesh(
-        locs=locs, 
+        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) , # add  noise  to prevent a race condition 
         areal_units_resolution_km=areal_units_resolution_km, 
         areal_units_proj4string_planar_km=areal_units_proj4string_planar_km 
       )
     }
+
 
 
     if ( areal_units_type == "tesselation" ) {
@@ -214,17 +140,17 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         resolution=areal_units_resolution_km, 
         spbuffer=areal_units_resolution_km, 
         areal_units_constraint_nmin=areal_units_constraint_nmin, 
-        tus=tus,
-        fraction_cv = fraction_cv, 
-        fraction_good_bad = fraction_good_bad, 
-        nAU_min = nAU_min  
+        tus=p$tus,
+        fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value   
+        fraction_good_bad = p$fraction_good_bad,  # stopping criterion: fraction of removal candidates to total increases to this value 
+        nAU_min = p$nAU_min   # stoppping criterion: allow no less than this number of areal units
       )  # voroni tesslation and delaunay triagulation
     }
     
-      
+    xydata = NULL
   
 
-  if (is.null(sppoly)) stop()
+  if (is.null(sppoly)) stop("Error in areal units: none found")
 
 
   if (!is.null(boundary)) {
@@ -251,19 +177,19 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     coast = NULL
 
 
-  # --------------------
-  # Overlays
-    sppoly = areal_units_overlay(
-      sppoly = sppoly, 
-      areal_units_overlay = areal_units_overlay, 
-      areal_units_resolution_km = areal_units_resolution_km, 
-      areal_units_proj4string_planar_km = areal_units_proj4string_planar_km, 
-      inputdata_spatial_discretization_planar_km = inputdata_spatial_discretization_planar_km ,
-      areal_units_timeperiod = areal_units_timeperiod   # only useful for groundfish
-    ) 
+    # --------------------
+    # Overlays
+      sppoly = areal_units_overlay_filter(
+        sppoly = sppoly, 
+        areal_units_overlay = areal_units_overlay, 
+        areal_units_resolution_km = areal_units_resolution_km, 
+        areal_units_proj4string_planar_km = areal_units_proj4string_planar_km, 
+        inputdata_spatial_discretization_planar_km = inputdata_spatial_discretization_planar_km ,
+        areal_units_timeperiod = areal_units_timeperiod   # only useful for groundfish
+      ) 
 
   # --------------------
-  # Constraints
+  # Additional Constraints from other data
 
   if (areal_units_constraint == "groundfish")  constraintdata = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
   if (areal_units_constraint == "snowcrab")    constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
@@ -280,7 +206,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sa_threshold_km2 = sa_threshold_km2, 
     constraintdata = constraintdata 
   ) 
-
 
 
   # --------------------
@@ -353,7 +278,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
 
-  if (plotit) plot(sppoly)
+  if (plotit) plot(sppoly["au_sa_km2"])
 
   return( sppoly )
 
