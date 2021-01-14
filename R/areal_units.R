@@ -95,7 +95,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   # ------------------------------------------------
   if (is.null(xydata)) {
-    if (exists("xydata", p)) {
+    if (exists("areal_units_xydata", p)) {
        assign("xydata", eval(parse(text=p$areal_units_xydata) ) )
     } else {
         message( "To create areal units, xydata is required.")
@@ -107,7 +107,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
   } else {
     boundary = st_sfc( st_multipoint( non_convex_hull( 
-      st_coordinates( xydata ),  # noise increases complexity of edges -> better discrim of polys
+      st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
       alpha=spbuffer*hull_multiplier  
     ) ), crs=st_crs(areal_units_proj4string_planar_km) )
   }
