@@ -7,8 +7,13 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
     sppoly$internal_id = 1:nrow(sppoly)
     row.names( sppoly) = sppoly$internal_id
 
+
+    sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
+    sppoly$au_sa_km2 = st_area(sppoly)
+    attributes( sppoly$au_sa_km2 ) = NULL
+
     constraintdata = sf::st_as_sf( constraintdata, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
-    constraintdata = st_transform( constraintdata, st_crs(sppoly ))
+    constraintdata = st_transform( constraintdata, st_crs(areal_units_proj4string_planar_km ))
     # constraintdata = st_join( constraintdata, sppoly, join=st_within )
     constraintdata$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
     ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
@@ -32,10 +37,13 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
         sppoly$dropflag = FALSE
         sppoly$nok = TRUE
         sppoly$nok[todrop] = FALSE
-        W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
-        for (i in 1:nrow(sppoly)) {
+        W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+        for (i in order(sppoly$au_sa_km2) ) {
           if ( sppoly$nok[i]) next()
-          v = setdiff( intersect( W.nb[[ i ]], which(sppoly$nok) ), which(sppoly$dropflag ) )
+          v = setdiff( 
+            intersect( W.nb[[ i ]], which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
+            which(sppoly$dropflag)                       ## AUs confirmed already to drop
+          )
           if (length(v) > 0) {
             j = v[ which.min( sppoly$npts[v] )]
             g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )

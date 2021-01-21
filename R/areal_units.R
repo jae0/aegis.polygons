@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, 
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, ... ) {
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, verbose=FALSE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -98,10 +98,15 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     if (exists("areal_units_xydata", p)) {
        assign("xydata", eval(parse(text=p$areal_units_xydata) ) )
     } else {
-        message( "To create areal units, xydata is required.")
-        stop()
+       message( "To create areal units, xydata is required.")
+       stop()
     }
   }
+  if (!exists("lon", xydata)) stop( "areal_units requires 'lon', 'lat', and possibly 'yr' ")
+
+  xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
+  xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
+
 
   if (project_name == "survey") {
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
@@ -118,7 +123,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         boundary
         %>% st_cast("POLYGON" )
         %>% st_make_valid()
-        %>% st_buffer( areal_units_resolution_km )
+        %>% st_buffer( areal_units_resolution_km/10 )
         %>% st_union()
         %>% st_cast("POLYGON" )
         %>% st_make_valid()
@@ -147,7 +152,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         fraction_todrop = p$fraction_todrop,
         fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value   
         fraction_good_bad = p$fraction_good_bad,  # stopping criterion: fraction of removal candidates to total increases to this value 
-        nAU_min = p$nAU_min   # stoppping criterion: allow no less than this number of areal units
+        nAU_min = p$nAU_min,   # stoppping criterion: allow no less than this number of areal units
+        verbose = verbose
       )  # voroni tesslation and delaunay triagulation
     }
     
@@ -250,7 +256,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 # ... but they require SA estimates after any filters (above))
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
     # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
-    message("Computing surface areas for each subarea ... can be slow if this is your first time")
+    if (verbose) message("Computing surface areas for each subarea ... can be slow if this is your first time")
     for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
       print(subarea)
       csa = polygon_managementareas( species="snowcrab", area=subarea )
