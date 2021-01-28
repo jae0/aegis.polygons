@@ -9,7 +9,6 @@ areal_units_lattice = function(spatial_domain, areal_units_resolution_km, areal_
 
     } else {
       pB = bathymetry_parameters( spatial_domain=spatial_domain, project_class="core"  )  # default is the "best" performing method
-
       # as points/grids
       Z = bathymetry_db( p=pB, DS="aggregated_data" )
       names(Z)[which(names(Z)=="z.mean" )] = "z"
