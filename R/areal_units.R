@@ -161,6 +161,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     xydata = NULL
   
 
+
   if (is.null(sppoly)) stop("Error in areal units: none found")
 
 
@@ -208,6 +209,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   if ( sa_threshold_km2  == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
   }
+
 
   sppoly = areal_units_constraint_filter( 
     sppoly=sppoly, 
