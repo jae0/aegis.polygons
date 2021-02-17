@@ -1,5 +1,5 @@
 
-area_lines.db = function( DS ) {
+area_lines.db = function( DS, returntype="list", project_to=st_crs( projection_proj4string("lonlat_wgs84") ) ) {
 
   if (DS=="cfa.regions") {
 
@@ -25,6 +25,15 @@ area_lines.db = function( DS ) {
         cfa.23.24=cfa.23.24,
         cfa.4x.24=cfa.4x.24
       )
+
+      if (returntype=="list") return(out)
+      if (returntype=="sf") {
+        require(sf)
+        out = st_sfc( st_multilinestring( sapply( out, as.matrix) ) )
+        st_cast(out, "MULTILINESTRING")
+        st_crs(out) = project_to 
+        return(out)
+      }
 
       return(out)
 
