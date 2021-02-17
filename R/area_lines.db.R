@@ -31,7 +31,8 @@ area_lines.db = function( DS, returntype="list", project_to=st_crs( projection_p
         require(sf)
         out = st_sfc( st_multilinestring( sapply( out, as.matrix) ) )
         st_cast(out, "MULTILINESTRING")
-        st_crs(out) = project_to 
+        st_crs(out) = st_crs( projection_proj4string("lonlat_wgs84") )
+        out = st_transform(out, project_to) 
         return(out)
       }
 
