@@ -15,7 +15,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
 
-  # areal_units_type:  "tessilation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh" 
+  # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh" 
   # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
 
   areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 25 )
@@ -25,7 +25,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   # these are required:
   project_name =  ifelse (exists("project_name", p), p$project_name, "default" )
   spatial_domain =  ifelse (exists("spatial_domain", p), p$spatial_domain, "SSE" )
-  areal_units_type =  ifelse (exists("areal_units_type", p), p$areal_units_type, "tessilation" )
+  areal_units_type =  ifelse (exists("areal_units_type", p), p$areal_units_type, "tesselation" )
   areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
   areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
   areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)

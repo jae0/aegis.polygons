@@ -31,7 +31,7 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
         sppoly = sppoly[ -todrop , ]
 
       } else {
-        # already done in tessilation method so not really needed but
+        # already done in tesselation method so not really needed but
         # try to join to adjacent au's
         # for other methods, this ensures a min no samples in each AU
         sppoly$dropflag = FALSE
