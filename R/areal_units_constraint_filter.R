@@ -17,7 +17,7 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
     # constraintdata = st_join( constraintdata, sppoly, join=st_within )
     constraintdata$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
     ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
-    sppoly$npts[ match( names(ww), sppoly$internal_id )] = ww
+    sppoly$npts[ match( names(ww), as.character(sppoly$internal_id) )] = ww
     # constraintdata = NULL
 
     zeros = which( sppoly$npts == 0 )
@@ -78,9 +78,13 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
       # update counts
       ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
       sppoly$npts = 0
-      sppoly$npts[ match( names(ww), sppoly$internal_id )] = ww
+      oo = match( names(ww), as.character(sppoly$internal_id) )
+      ii = which(is.finite(oo))
+      sppoly$npts[ oo[ii] ] = ww[ii]
       
       sppoly$internal_id = NULL
+      sppoly = st_make_valid(sppoly)
+
       message( "Dropping due to areal_units_constraint_nmin, now there are : ", nrow(sppoly), " areal units." )
     }
 
