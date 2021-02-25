@@ -112,6 +112,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
   } else if ( project_name == "bio.snowcrab") {
     boundary = polygon_managementareas( species="snowcrab" )  
+    boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
+
   }  else {
     boundary = st_sfc( st_multipoint( non_convex_hull( 
       st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
