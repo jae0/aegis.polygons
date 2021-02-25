@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, 
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_multiplier = 6, verbose=FALSE, ... ) {
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, verbose=FALSE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -9,7 +9,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     redo=FALSE
     use_stmv_solution=TRUE
     spbuffer=5
-    hull_multiplier = 6
+    hull_alpha = 15
   }
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
@@ -113,12 +113,29 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   } else if ( project_name == "bio.snowcrab") {
     boundary = polygon_managementareas( species="snowcrab" )  
     boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
+    boundary = st_buffer(boundary, 0)
+    boundary = st_make_valid(boundary)
+
+    data_boundary = st_sfc( st_multipoint( non_convex_hull( 
+      st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
+      alpha=hull_alpha  
+      ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+    data_boundary = (
+        data_boundary
+        %>% st_cast("POLYGON" )
+        %>% st_make_valid()
+        %>% st_buffer( areal_units_resolution_km/10 )
+        %>% st_union()
+        %>% st_cast("POLYGON" )
+        %>% st_make_valid()
+      )
+    boundary = st_intersection(data_boundary, boundary)
 
   }  else {
     boundary = st_sfc( st_multipoint( non_convex_hull( 
       st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
-      alpha=spbuffer*hull_multiplier  
-    ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      alpha=hull_alpha  
+   ) ), crs=st_crs(areal_units_proj4string_planar_km) )
   }
  
   
