@@ -17,7 +17,7 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
     # constraintdata = st_join( constraintdata, sppoly, join=st_within )
     constraintdata$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
     ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
-    sppoly$npts[ as.numeric(names(ww))] = ww
+    sppoly$npts[ match( names(ww), sppoly$internal_id )] = ww
     # constraintdata = NULL
 
     zeros = which( sppoly$npts == 0 )
@@ -38,7 +38,7 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
         sppoly$nok = TRUE
         sppoly$nok[todrop] = FALSE
         W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
-        for (i in order(sppoly$au_sa_km2) ) {
+        for (i in order(sppoly$npts) ) {
           if ( sppoly$nok[i]) next()
           v = setdiff( 
             intersect( W.nb[[ i ]], which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
@@ -63,6 +63,11 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
         sppoly = sppoly[ - which( sppoly$dropflag ), ]
         sppoly$nok =NULL
       }
+
+      # update counts
+      ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
+      sppoly$npts = 0
+      sppoly$npts[ match( names(ww), sppoly$internal_id )] = ww
       
       sppoly$internal_id = NULL
       message( "Dropping due to areal_units_constraint_nmin, now there are : ", nrow(sppoly), " areal units." )
