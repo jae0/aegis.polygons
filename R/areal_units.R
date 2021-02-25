@@ -29,6 +29,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
   areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
   areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)
+  areal_units_constraint_ntarget =  ifelse (exists("areal_units_constraint_ntarget", p), p$areal_units_constraint_ntarget, 0)
 
 
   areal_units_fn = paste(
@@ -37,6 +38,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     areal_units_type,
     areal_units_resolution_km,
     areal_units_constraint,
+    areal_units_constraint_ntarget,
     areal_units_constraint_nmin,
     paste0(areal_units_overlay, collapse="~"),
     sep="|"
@@ -169,7 +171,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         boundary=boundary, 
         resolution=areal_units_resolution_km, 
         spbuffer=areal_units_resolution_km, 
-        areal_units_constraint_nmin=areal_units_constraint_nmin, 
+        areal_units_constraint_ntarget=areal_units_constraint_ntarget, 
         tus=p$tus,
         fraction_todrop = p$fraction_todrop,
         fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value   
