@@ -1,4 +1,4 @@
-maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="pre2014", internal_resolution_km=0.1, crs_km="", redo=FALSE ) {
+maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="pre2014", internal_resolution_km=0.1, crs_km="+proj=utm +ellps=WGS84 +zone=20 +units=km", redo=FALSE ) {
 
   polydir = project.datadirectory("aegis", "polygons")
 
@@ -26,10 +26,21 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
     }
   }
 
-  if (DS %in% c("maritimes", "snowcrab") ) {
+  if (DS %in% c("maritimes") ) {
     boundary = (
       polygon_managementareas( species="maritimes" )
-      %>% st_transform( st_crs(sppoly) )
+      %>% st_transform( st_crs(crs_km) )
+      %>% st_simplify()
+      %>% st_buffer(0.1)
+      %>% st_union()
+      %>% st_simplify()
+    )
+  }
+
+  if (DS=="snowcrab") {
+    boundary = (
+      polygon_managementareas( species="snowcrab" )
+      %>% st_transform( st_crs(crs_km) )
       %>% st_simplify()
       %>% st_buffer(0.1)
       %>% st_union()
@@ -43,7 +54,7 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
   }
 
   boundary = (
-    st_transform(boundary, crs_km )
+    st_transform(boundary, st_crs(crs_km) )
     %>% st_buffer( internal_resolution_km  )
     %>% st_union()
     %>% st_simplify()
