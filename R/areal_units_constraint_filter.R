@@ -40,21 +40,32 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
         W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
         for (i in order(sppoly$npts) ) {
           if ( sppoly$nok[i]) next()
-          v = setdiff( 
-            intersect( W.nb[[ i ]], which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
-            which(sppoly$dropflag)                       ## AUs confirmed already to drop
-          )
-          if (length(v) > 0) {
-            j = v[ which.min( sppoly$npts[v] )]
-            g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
-            if ( !inherits(g_ij, "try-error" )) {
-              st_geometry(sppoly)[j] = g_ij
-              sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-              sppoly$nok[i] = FALSE
-              sppoly$dropflag[i] = TRUE
-              if ( sppoly$npts[j] >= areal_units_constraint_nmin) sppoly$nok[j] = TRUE
+          lnb = W.nb[[ i ]]
+          if (lnb < 1) next()
+          local_finished = FALSE
+          for (f in 1:length(lnb) ) {
+            if (local_finished) break()
+            v = setdiff( 
+              intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
+              which(sppoly$dropflag)                       ## AUs confirmed already to drop
+            )
+            if (length(v) > 0) {
+              j = v[ which.min( sppoly$npts[v] )]
+              g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+              if ( !inherits(g_ij, "try-error" )) {
+                st_geometry(sppoly)[j] = g_ij
+                sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+                sppoly$nok[i] = FALSE
+                sppoly$dropflag[i] = TRUE
+                if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
+                  local_finished=TRUE
+                  sppoly$nok[j] = TRUE
+                }
+              }
             }
+            
           }
+
         }
         # final check
         toofew = which( sppoly$npts < areal_units_constraint_nmin )
