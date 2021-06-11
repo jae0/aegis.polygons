@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, 
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, verbose=FALSE, ... ) {
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union", verbose=FALSE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -251,6 +251,27 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   sppoly = st_make_valid(sppoly)
   if (!exists( "AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
+  oo = which(duplicated(sppoly$AUID) )
+  if (length(oo)>0) {
+    if ( duplications_action=="union" ) {    
+      # adding features (islands, coastlines) can break areal units that might be best left together 
+      for (o in oo) {
+        uu = which(sppoly$AUID == sppoly$AUID[o])
+        vv = st_union( sppoly[uu,])
+        st_geometry( sppoly[uu[1],]) = st_geometry(vv)
+        todrop = setdiff(uu, uu[1])
+        sppoly = sppoly[- todrop, ]
+      } 
+    } 
+    if ( duplications_action=="separate" ) {    
+      # adding features (islands, coastlines) can break areal units that might be best left together 
+      for (o in oo) {
+        uu = which(sppoly$AUID == sppoly$AUID[o])
+        sppoly$AUID[ uu] = paste( sppoly$AUID[uu], 1:length(uu), sep="_")
+      } 
+    } 
+    sppoly = st_make_valid(sppoly)
+  }
   row.names(sppoly) = sppoly$AUID
   W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
   W.remove = which(card(W.nb) == 0)
@@ -262,6 +283,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sppoly = sppoly[W.keep,]
     row.names(sppoly) = sppoly$AUID
     sppoly = sppoly[order(sppoly$AUID),]
+    sppoly = st_make_valid(sppoly)
   }
 
 
@@ -298,7 +320,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
 
     # ------------------------------------------------
-
+  sppoly$au_sa_km2 = st_area( sppoly )
 
   attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
   attr(sppoly, "project_name") = project_name
