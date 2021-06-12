@@ -1,5 +1,5 @@
 
-areal_units_overlay_filter = function( sppoly, areal_units_overlay, inputdata_spatial_discretization_planar_km, areal_units_resolution_km, areal_units_proj4string_planar_km, areal_units_timeperiod="pre2014" ) {
+areal_units_overlay_filter = function( sppoly, areal_units_overlay, inputdata_spatial_discretization_planar_km, areal_units_resolution_km, areal_units_proj4string_planar_km, areal_units_timeperiod=NULL ) {
 
 
   if ( grepl("groundfish_strata", areal_units_overlay) ) {
@@ -9,6 +9,8 @@ areal_units_overlay_filter = function( sppoly, areal_units_overlay, inputdata_sp
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
     # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
+
+    if (is.null(areal_units_timeperiod)) areal_units_timeperiod="pre2014"
 
     gf = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod )
     gf = st_make_valid(gf)

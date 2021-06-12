@@ -15,7 +15,8 @@ areal_units_lattice = function(spatial_domain, areal_units_resolution_km, areal_
       # Z = lonlat2planar(Z, aegis_proj4string_planar_km)  # should not be required but to make sure
     }
     Z = Z[ geo_subset( spatial_domain=spatial_domain, Z=Z ), ]
-    Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( areal_units_proj4string_planar_km ) )
+    Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs( pB$aegis_proj4string_planar_km ) )
+    Z = st_transform(Z, st_crs(areal_units_proj4string_planar_km))
 
     if (rastermethod=="sf") {
       sppoly = st_as_sf( st_make_grid( Z, cellsize=areal_units_resolution_km,  what="polygons", square=TRUE ) )
@@ -30,7 +31,7 @@ areal_units_lattice = function(spatial_domain, areal_units_resolution_km, areal_
       raster_template = NULL
     }
     Z = NULL
- 
+
   return(sppoly)
 
 }
