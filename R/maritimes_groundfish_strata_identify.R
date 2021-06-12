@@ -1,5 +1,5 @@
 
-  maritimes_groundfish_strata_identify = function( Y, sppoly=NULL, xyvars=c("lon", "lat"),  plotdata=FALSE, planar_crs_km="+proj=utm +ellps=WGS84 +zone=20 +units=km"){
+  maritimes_groundfish_strata_identify = function( Y, sppoly=NULL, xyvars=c("lon", "lat"),  planar_crs_km="+proj=utm +ellps=WGS84 +zone=20 +units=km"){
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
       # "pre2014" for older
 
@@ -42,13 +42,5 @@
 
     Y = merge(Y, st, by.x="AUID", by.y="stratum.strat", all.x=TRUE, all.y=FALSE, suffixes=c("", ".gsstratum") )
 
-    if (plotdata) {
-      nomatches = which(is.na(Y$AUID))
-      plot(sppoly)
-      plot( Y, pch=20, col="green", add=TRUE)
-      if (length(nomatches) >0) {
-        plot( st_as_sf( Y[nomatches, xyvars], coords=c("lon","lat"), crs=crs_lonlat ), col="red", add=TRUE )
-      }
-    }
     return(Y)
   }

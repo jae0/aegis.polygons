@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE, 
+areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
   use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union", verbose=FALSE, ... ) {
 
   if (0) {
@@ -15,7 +15,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
 
-  # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh" 
+  # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh"
   # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
 
   areal_units_resolution_km =  ifelse (exists("areal_units_resolution_km", p), p$areal_units_resolution_km, 25 )
@@ -43,10 +43,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     paste0(areal_units_overlay, collapse="~"),
     sep="|"
   )
-  
+
   areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )
   areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
-    
+
 
   sppoly = NULL
   boundary = NULL
@@ -60,14 +60,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   if ( areal_units_type == "lattice" ) {
     sppoly = areal_units_lattice(
-      spatial_domain = spatial_domain, 
-      areal_units_resolution_km=areal_units_resolution_km, 
+      spatial_domain = spatial_domain,
+      areal_units_resolution_km=areal_units_resolution_km,
       areal_units_proj4string_planar_km=areal_units_proj4string_planar_km ,
       rastermethod = rastermethod,
       use_stmv_solution=use_stmv_solution
     )
   }
-   
+
   # ------------------------------------------------
 
   if (areal_units_type %in% c( "stratanal_polygons_pre2014", "stratanal_polygons", "groundfish_strata")  ) {
@@ -104,23 +104,30 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
        stop()
     }
   }
-  if (!exists("lon", xydata)) stop( "areal_units requires 'lon', 'lat', and possibly 'yr' ")
+  if (!exists("lon", xydata)) {
+    if (! "sf" %in% class(xydata) ) {
+      stop( "areal_units requires 'lon', 'lat', and possibly 'yr' or that it be an 'sf' object")
+    }
+  }
 
-  xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
+  if ("sf" %in% class(xydata) ) {
+    xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
+  }
   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
 
 
   if (project_name == "survey") {
-    boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger
+    boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger (crm is for incoming data)
+    boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) ) # output of above is lonlat
   } else if ( project_name == "bio.snowcrab") {
-    boundary = polygon_managementareas( species="snowcrab" )  
+    boundary = polygon_managementareas( species="snowcrab" )
     boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
     boundary = st_buffer(boundary, 0)
     boundary = st_make_valid(boundary)
 
-    data_boundary = st_sfc( st_multipoint( non_convex_hull( 
+    data_boundary = st_sfc( st_multipoint( non_convex_hull(
       st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
-      alpha=hull_alpha  
+      alpha=hull_alpha
       ) ), crs=st_crs(areal_units_proj4string_planar_km) )
     data_boundary = (
         data_boundary
@@ -134,13 +141,13 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     boundary = st_intersection(data_boundary, boundary)
 
   }  else {
-    boundary = st_sfc( st_multipoint( non_convex_hull( 
+    boundary = st_sfc( st_multipoint( non_convex_hull(
       st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
-      alpha=hull_alpha  
+      alpha=hull_alpha
    ) ), crs=st_crs(areal_units_proj4string_planar_km) )
   }
- 
-  
+
+
   if (!is.null(boundary)) {
       boundary = (
         boundary
@@ -156,34 +163,34 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
     if ( areal_units_type == "inla_mesh" ) {
       sppoly = areal_units_inla_mesh(
-        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) , # add  noise  to prevent a race condition 
-        areal_units_resolution_km=areal_units_resolution_km, 
-        areal_units_proj4string_planar_km=areal_units_proj4string_planar_km 
+        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) , # add  noise  to prevent a race condition
+        areal_units_resolution_km=areal_units_resolution_km,
+        areal_units_proj4string_planar_km=areal_units_proj4string_planar_km
       )
     }
 
 
 
     if ( areal_units_type == "tesselation" ) {
-      
-      sppoly = aegis_mesh( 
-        pts=xydata, 
-        boundary=boundary, 
-        resolution=areal_units_resolution_km, 
-        spbuffer=areal_units_resolution_km, 
-        areal_units_constraint_ntarget=areal_units_constraint_ntarget, 
+
+      sppoly = aegis_mesh(
+        pts=xydata,
+        boundary=boundary,
+        resolution=areal_units_resolution_km,
+        spbuffer=areal_units_resolution_km,
+        areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         tus=p$tus,
         fraction_todrop = p$fraction_todrop,
-        fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value   
-        fraction_good_bad = p$fraction_good_bad,  # stopping criterion: fraction of removal candidates to total increases to this value 
+        fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value
+        fraction_good_bad = p$fraction_good_bad,  # stopping criterion: fraction of removal candidates to total increases to this value
         nAU_min = p$nAU_min,   # stoppping criterion: allow no less than this number of areal units
         verbose = verbose
       )  # voroni tesslation and delaunay triagulation
     }
-    
-    
+
+
     xydata = NULL
-  
+
 
 
   if (is.null(sppoly)) stop("Error in areal units: none found")
@@ -198,7 +205,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       %>% st_cast( "POLYGON" )
     )
     boundary = NULL
-  }  
+  }
 
     #  remove.coastline
     require(aegis.coastline)
@@ -216,13 +223,13 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     # --------------------
     # Overlays
       sppoly = areal_units_overlay_filter(
-        sppoly = sppoly, 
-        areal_units_overlay = areal_units_overlay, 
-        areal_units_resolution_km = areal_units_resolution_km, 
-        areal_units_proj4string_planar_km = areal_units_proj4string_planar_km, 
+        sppoly = sppoly,
+        areal_units_overlay = areal_units_overlay,
+        areal_units_resolution_km = areal_units_resolution_km,
+        areal_units_proj4string_planar_km = areal_units_proj4string_planar_km,
         inputdata_spatial_discretization_planar_km = inputdata_spatial_discretization_planar_km ,
         areal_units_timeperiod = areal_units_timeperiod   # only useful for groundfish
-      ) 
+      )
 
   # --------------------
   # Additional Constraints from other data
@@ -235,14 +242,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   }
 
 
-  sppoly = areal_units_constraint_filter( 
-    sppoly=sppoly, 
+  sppoly = areal_units_constraint_filter(
+    sppoly=sppoly,
     areal_units_type = areal_units_type,
     areal_units_constraint_nmin = areal_units_constraint_nmin,
     areal_units_proj4string_planar_km=areal_units_proj4string_planar_km,
-    sa_threshold_km2 = sa_threshold_km2, 
-    constraintdata = constraintdata 
-  ) 
+    sa_threshold_km2 = sa_threshold_km2,
+    constraintdata = constraintdata
+  )
 
 
   # --------------------
@@ -253,23 +260,23 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   if (!exists( "AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
   oo = which(duplicated(sppoly$AUID) )
   if (length(oo)>0) {
-    if ( duplications_action=="union" ) {    
-      # adding features (islands, coastlines) can break areal units that might be best left together 
+    if ( duplications_action=="union" ) {
+      # adding features (islands, coastlines) can break areal units that might be best left together
       for (o in oo) {
         uu = which(sppoly$AUID == sppoly$AUID[o])
         vv = st_union( sppoly[uu,])
         st_geometry( sppoly[uu[1],]) = st_geometry(vv)
         todrop = setdiff(uu, uu[1])
         sppoly = sppoly[- todrop, ]
-      } 
-    } 
-    if ( duplications_action=="separate" ) {    
-      # adding features (islands, coastlines) can break areal units that might be best left together 
+      }
+    }
+    if ( duplications_action=="separate" ) {
+      # adding features (islands, coastlines) can break areal units that might be best left together
       for (o in oo) {
         uu = which(sppoly$AUID == sppoly$AUID[o])
         sppoly$AUID[ uu] = paste( sppoly$AUID[uu], 1:length(uu), sep="_")
-      } 
-    } 
+      }
+    }
     sppoly = st_make_valid(sppoly)
   }
   row.names(sppoly) = sppoly$AUID
@@ -309,7 +316,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       print(subarea)
       csa = polygon_managementareas( species="maritimes", area=subarea )
       csa = st_transform( st_as_sf(csa), st_crs( areal_units_proj4string_planar_km ) )
-      ooo = st_intersection( csa, sppoly ) 
+      ooo = st_intersection( csa, sppoly )
       ooo$surfacearea = st_area( ooo )
       vn = paste(subarea, "surfacearea", sep="_")
       sppoly[[ vn ]] = 0
@@ -332,7 +339,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   attr(sppoly, "areal_units_overlay") = areal_units_overlay
   attr(sppoly, "areal_units_resolution_km") = areal_units_resolution_km
   attr(sppoly, "areal_units_type") = areal_units_type
-  attr(sppoly, "areal_units_constraint") = areal_units_constraint 
+  attr(sppoly, "areal_units_constraint") = areal_units_constraint
   attr(sppoly, "areal_units_constraint_nmin") = areal_units_constraint_nmin
 
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
