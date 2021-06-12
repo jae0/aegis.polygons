@@ -20,11 +20,13 @@ areal_units_overlay_filter = function( sppoly, areal_units_overlay, inputdata_sp
     row.names(gf) = gf$gfUID
 
 
-    boundary = maritimes_fishery_boundary( areal_units_timeperiod=areal_units_timeperiod, internal_resolution_km=inputdata_spatial_discretization_planar_km, crs_km=st_crs(sppoly) )
+
+    boundary = maritimes_fishery_boundary( areal_units_timeperiod=areal_units_timeperiod, internal_resolution_km=inputdata_spatial_discretization_planar_km )
     boundary = st_transform(boundary, st_crs(sppoly) )
 
+
     sp0 = sppoly
-    sp0$AUID = as.character(1:length(sp0))
+    sp0$AUID = as.character(1:nrow(sp0))
 
     sppoly = (
       st_intersection( st_intersection( boundary, sppoly ), gf )

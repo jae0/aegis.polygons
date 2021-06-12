@@ -192,7 +192,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     xydata = NULL
 
 
-
   if (is.null(sppoly)) stop("Error in areal units: none found")
 
 
