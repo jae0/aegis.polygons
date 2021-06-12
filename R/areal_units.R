@@ -261,13 +261,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   if (length(oo)>0) {
     if ( duplications_action=="union" ) {
       # adding features (islands, coastlines) can break areal units that might be best left together
+      todrop = NULL
       for (o in oo) {
         uu = which(sppoly$AUID == sppoly$AUID[o])
         vv = st_union( sppoly[uu,])
         st_geometry( sppoly[uu[1],]) = st_geometry(vv)
-        todrop = setdiff(uu, uu[1])
-        sppoly = sppoly[- todrop, ]
+        todrop = c(todrop, setdiff(uu, uu[1]))
       }
+      sppoly = sppoly[- todrop, ]
     }
     if ( duplications_action=="separate" ) {
       # adding features (islands, coastlines) can break areal units that might be best left together
