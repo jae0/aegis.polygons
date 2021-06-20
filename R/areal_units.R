@@ -110,7 +110,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     }
   }
 
-  if ("sf" %in% class(xydata) ) {
+  if (! "sf" %in% class(xydata) ) {
     xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
   }
   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
