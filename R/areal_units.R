@@ -56,7 +56,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     if ( !is.null(sppoly) ) return(sppoly)
   }
 
-  message( "Creating areal units:", areal_units_fn_full)
+  message( "Creating areal units: ", areal_units_fn_full)
+
+  message( "Areal units base structure (type): ", areal_units_type)
 
   if ( areal_units_type == "lattice" ) {
     sppoly = areal_units_lattice(
@@ -117,9 +119,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
 
   if (project_name == "survey") {
+    message( "Determining areal unit domain boundary from groundfish survey")
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger (crm is for incoming data)
     boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) ) # output of above is lonlat
   } else if ( project_name == "bio.snowcrab") {
+    message( "Determining areal unit domain boundary from snowcrab survey")
     boundary = polygon_managementareas( species="snowcrab" )
     boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
     boundary = st_buffer(boundary, 0)
@@ -141,6 +145,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     boundary = st_intersection(data_boundary, boundary)
 
   }  else {
+    message( "Determining areal unit domain boundary from input: xydata")
     boundary = st_sfc( st_multipoint( non_convex_hull(
       st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
       alpha=hull_alpha
@@ -162,6 +167,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
 
     if ( areal_units_type == "inla_mesh" ) {
+      message( "Determining areal units as an INLA mesh")
       sppoly = areal_units_inla_mesh(
         locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) , # add  noise  to prevent a race condition
         areal_units_resolution_km=areal_units_resolution_km,
@@ -172,7 +178,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
 
     if ( areal_units_type == "tesselation" ) {
-
+      message( "Determining areal units via iterative tesselation and dissolving AUs")
       sppoly = aegis_mesh(
         pts=xydata,
         boundary=boundary,
@@ -187,7 +193,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         verbose = verbose
       )  # voroni tesslation and delaunay triagulation
     }
-
 
     xydata = NULL
 
@@ -221,6 +226,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
     # --------------------
     # Overlays
+    message( "Filtering areal units on overlays")
+
       sppoly = areal_units_overlay_filter(
         sppoly = sppoly,
         areal_units_overlay = areal_units_overlay,
@@ -233,8 +240,15 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   # --------------------
   # Additional Constraints from other data
 
-  if (areal_units_constraint == "groundfish")  constraintdata = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
-  if (areal_units_constraint == "snowcrab")    constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
+  if (areal_units_constraint == "groundfish")  {
+    message( "Constrain areal units to required number of groundfish survey locations by merging into adjacent AUs")
+    constraintdata = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
+  }
+  
+  if (areal_units_constraint == "snowcrab")    {
+    message( "Constrain areal units to required number of snowcrab survey locations by merging into adjacent AUs")
+    constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
+  }
 
   if ( sa_threshold_km2  == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
