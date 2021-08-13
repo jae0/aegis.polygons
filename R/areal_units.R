@@ -343,7 +343,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     # ------------------------------------------------
   sppoly$au_sa_km2 = st_area( sppoly )
 
-  attr(sppoly, "nb") = W.nb  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "nb") = INLA::inla.read.graph( spdep::nb2mat( W.nb ))  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
   attr(sppoly, "project_name") = project_name
   attr(sppoly, "spatial_domain") = spatial_domain
   attr(sppoly, "inputdata_spatial_discretization_planar_km") = inputdata_spatial_discretization_planar_km
