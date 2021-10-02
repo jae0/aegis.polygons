@@ -10,6 +10,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     use_stmv_solution=TRUE
     spbuffer=5
     hull_alpha = 15
+    rastermethod="sf"
+    xydata=NULL
+    constraintdata=NULL
+    duplications_action="union"
+    areal_units_timeperiod=NULL
+    verbose=TRUE
   }
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
@@ -83,7 +89,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     row.names(sppoly) = sppoly$AUID
   }
 
-
   if (areal_units_type %in% c( "stratanal_polygons_post2014")  ) {
     ## using the "standard" polygon definitions  .. see https://cran.r-project.org/web/packages/spdep/vignettes/nb.pdf
     # Here we compute surface area of each polygon via projection to utm or some other appropriate planar projection.
@@ -94,6 +99,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sppoly$AUID = as.character(sppoly$AUID)
     row.names(sppoly) = sppoly$AUID
   }
+
 
 
 
@@ -220,8 +226,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         %>% st_buffer(inputdata_spatial_discretization_planar_km )
         %>% st_union()
     )
+
+    sppoly = st_transform( sppoly, st_crs(areal_units_proj4string_planar_km) )
     sppoly = st_difference( sppoly, coast)
     coast = NULL
+
 
 
     # --------------------
@@ -284,6 +293,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       }
       sppoly = sppoly[- todrop, ]
     }
+
     if ( duplications_action=="separate" ) {
       # adding features (islands, coastlines) can break areal units that might be best left together
       for (o in oo) {
@@ -294,6 +304,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sppoly = st_make_valid(sppoly)
   }
   row.names(sppoly) = sppoly$AUID
+
+  require(spdep)
+  
   W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
   W.remove = which(card(W.nb) == 0)
 
