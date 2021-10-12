@@ -151,7 +151,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     boundary = st_intersection(data_boundary, boundary)
 
   }  else {
+
     message( "Determining areal unit domain boundary from input: xydata")
+    message( "If you get strange results, try increasing the value of hull_alpha=15 (granularity in km )")
+    
     boundary = st_sfc( st_multipoint( non_convex_hull(
       st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
       alpha=hull_alpha
@@ -172,6 +175,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   }
 
 
+
     if ( areal_units_type == "inla_mesh" ) {
       message( "Determining areal units as an INLA mesh")
       sppoly = areal_units_inla_mesh(
@@ -180,8 +184,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         areal_units_proj4string_planar_km=areal_units_proj4string_planar_km
       )
     }
-
-
 
     if ( areal_units_type == "tesselation" ) {
       message( "Determining areal units via iterative tesselation and dissolving AUs")
