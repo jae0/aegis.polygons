@@ -28,7 +28,7 @@
 
     Y = merge(Y, st_drop_geometry(sppoly), all.x=TRUE, all.y=FALSE)
 
-    st = aegis.survey::groundfish_survey_db(DS="gsstratum")
+    st =  groundfish_survey_db(DS="gsstratum")
     names(st) = paste("stratum", names(st), sep=".")
     st$stratum.dmin.fathoms = as.numeric(st$stratum.dmin) #units? 0.54680665 fathoms = 1 meter
     st$stratum.dmax.fathoms = as.numeric(st$stratum.dmax) #units?
