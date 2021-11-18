@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, ... ) {
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -349,7 +349,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
       ooo$surfacearea = st_area( ooo )
       vn = paste(subarea, "surfacearea", sep="_")
       sppoly[[ vn ]] = 0
-      j = match( ooo$AUID, sppoly$AUID )
+      j = match( ooo$AUID, sppoly$AUID )      
       if (length(j) > 0)  sppoly[[ vn ]][j] = ooo$surfacearea
     }
   }
@@ -357,6 +357,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
     # ------------------------------------------------
   sppoly$au_sa_km2 = st_area( sppoly )
+
+  if (!exists("strata_to_keep", sppoly) ) sppoly$strata_to_keep = TRUE  # flag for aggregations
 
   nb = INLA::inla.read.graph( spdep::nb2mat( W.nb ))
   attr(nb, "region.id") = sppoly$AUID
@@ -375,6 +377,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   attr(sppoly, "areal_units_constraint") = areal_units_constraint
   attr(sppoly, "areal_units_constraint_nmin") = areal_units_constraint_nmin
 
+  if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
 
   if (plotit) plot(sppoly["au_sa_km2"])
