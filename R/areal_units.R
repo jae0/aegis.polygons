@@ -332,9 +332,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     }
     sppoly = st_make_valid(sppoly)
   }
-  
-  if (!is.null(areal_units_to_drop))  sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
-
+   
   row.names(sppoly) = sppoly$AUID
 
   require(spdep)
@@ -411,7 +409,31 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
 
   if (plotit) plot(sppoly["au_sa_km2"])
+ 
+  if (!is.null(areal_units_to_drop)) {
+      sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
+      
+      W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  
+      W.remove = which(card(W.nb) == 0)
 
+      if ( length(W.remove) > 0 ) {
+        # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
+        W.keep = which(card(W.nb) > 0)
+        W.nb = nb_remove( W.nb, W.remove )
+        sppoly = sppoly[W.keep,]
+        row.names(sppoly) = sppoly$AUID
+        sppoly = sppoly[order(sppoly$AUID),]
+        sppoly = st_make_valid(sppoly)
+      }
+
+      nb = INLA::inla.read.graph( spdep::nb2mat( W.nb ))
+      attr(nb, "region.id") = sppoly$AUID
+      attr(sppoly, "nb") = nb  # adding neighbourhood as an attribute to sppoly
+      attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
+
+    } 
+ 
+ 
   return( sppoly )
 
 }
