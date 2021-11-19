@@ -60,6 +60,32 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   if (!redo) {
     if ( file.exists(areal_units_fn_full) ) load(areal_units_fn_full)
+
+    if (!is.null(areal_units_to_drop)) {
+      sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
+      
+      require(spdep)
+      
+      W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  
+      W.remove = which(card(W.nb) == 0)
+
+      if ( length(W.remove) > 0 ) {
+        # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
+        W.keep = which(card(W.nb) > 0)
+        W.nb = nb_remove( W.nb, W.remove )
+        sppoly = sppoly[W.keep,]
+        row.names(sppoly) = sppoly$AUID
+        sppoly = sppoly[order(sppoly$AUID),]
+        sppoly = st_make_valid(sppoly)
+      }
+
+      nb = INLA::inla.read.graph( spdep::nb2mat( W.nb ))
+      attr(nb, "region.id") = sppoly$AUID
+      attr(sppoly, "nb") = nb  # adding neighbourhood as an attribute to sppoly
+      attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
+
+    } 
+    if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
     if ( !is.null(sppoly) ) return(sppoly)
   }
 
@@ -307,7 +333,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sppoly = st_make_valid(sppoly)
   }
   
-  if (!is.null(areal_units_to_drop))  sppoly = sppoly[ sppoly$AUID %in% areal_units_to_drop ,]
+  if (!is.null(areal_units_to_drop))  sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
 
   row.names(sppoly) = sppoly$AUID
 
