@@ -1,7 +1,8 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, ... ) {
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
+      areal_units_to_drop=NULL, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -305,6 +306,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     }
     sppoly = st_make_valid(sppoly)
   }
+  
+  if (!is.null(areal_units_to_drop))  sppoly = sppoly[ sppoly$AUID %in% areal_units_to_drop ,]
+
   row.names(sppoly) = sppoly$AUID
 
   require(spdep)
