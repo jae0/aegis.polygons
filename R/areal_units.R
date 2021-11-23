@@ -223,7 +223,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         tus=p$tus,
         fraction_todrop = p$fraction_todrop,
         fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value
-        fraction_good_bad = p$fraction_good_bad,  # stopping criterion: fraction of removal candidates to total increases to this value
         nAU_min = p$nAU_min,   # stoppping criterion: allow no less than this number of areal units
         verbose = verbose
       )  # voroni tesslation and delaunay triagulation
