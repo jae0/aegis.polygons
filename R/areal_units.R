@@ -220,6 +220,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         resolution=areal_units_resolution_km,
         spbuffer=areal_units_resolution_km,
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
+        areal_units_constraint_nmin=areal_units_constraint_nmin,
         tus=p$tus,
         fraction_todrop = p$fraction_todrop,
         fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value
