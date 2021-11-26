@@ -2,7 +2,7 @@
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
   use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
-      areal_units_to_drop=NULL, ... ) {
+      areal_units_to_drop=NULL, count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -18,6 +18,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     areal_units_timeperiod=NULL
     verbose=TRUE
   }
+
+  require(spdep)
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
@@ -64,8 +66,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     if (!is.null(areal_units_to_drop)) {
       sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
       
-      require(spdep)
-      
+     
       W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  
       W.remove = which(card(W.nb) == 0)
 
@@ -150,44 +151,53 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   }
   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
 
+  if (respect_spatial_domain) {
+    xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ) , ]
+  }
 
-  if (project_name == "survey") {
+  if ( areal_units_type %in% c( "stratanal_polygons_pre2014", "stratanal_polygons", "groundfish_strata", "stratanal_polygons_post2014") ) {
     message( "Determining areal unit domain boundary from groundfish survey")
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger (crm is for incoming data)
     boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) ) # output of above is lonlat
-  } else if ( project_name == "bio.snowcrab") {
-    message( "Determining areal unit domain boundary from snowcrab survey")
-    boundary = polygon_managementareas( species="snowcrab" )
-    boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
-    boundary = st_buffer(boundary, 0)
-    boundary = st_make_valid(boundary)
-
-    data_boundary = st_sfc( st_multipoint( non_convex_hull(
-      st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
-      alpha=hull_alpha
-      ) ), crs=st_crs(areal_units_proj4string_planar_km) )
-    data_boundary = (
-        data_boundary
-        %>% st_cast("POLYGON" )
-        %>% st_make_valid()
-        %>% st_buffer( areal_units_resolution_km/10 )
-        %>% st_union()
-        %>% st_cast("POLYGON" )
-        %>% st_make_valid()
-      )
-    boundary = st_intersection(data_boundary, boundary)
-
-  }  else {
-
-    message( "Determining areal unit domain boundary from input: xydata")
-    message( "If you get strange results, try increasing the value of hull_alpha=15 (granularity in km )")
+  
+  } else {
     
-    boundary = st_sfc( st_multipoint( non_convex_hull(
-      st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
-      alpha=hull_alpha
-   ) ), crs=st_crs(areal_units_proj4string_planar_km) )
-  }
+    if ( project_name == "bio.snowcrab") {
+    
+      message( "Determining areal unit domain boundary from snowcrab survey")
+      boundary = polygon_managementareas( species="snowcrab" )
+      boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
+      boundary = st_buffer(boundary, 0)
+      boundary = st_make_valid(boundary)
 
+      data_boundary = st_sfc( st_multipoint( non_convex_hull(
+        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
+        alpha=hull_alpha
+        ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      data_boundary = (
+          data_boundary
+          %>% st_cast("POLYGON" )
+          %>% st_make_valid()
+          %>% st_buffer( areal_units_resolution_km/10 )
+          %>% st_union()
+          %>% st_cast("POLYGON" )
+          %>% st_make_valid()
+        )
+      boundary = st_intersection(data_boundary, boundary)
+
+    }  else {
+
+      message( "Determining areal unit domain boundary from input: xydata")
+      message( "If you get strange results, try increasing the value of hull_alpha=15 (granularity in km )")
+      
+      boundary = st_sfc( st_multipoint( non_convex_hull(
+        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
+        alpha=hull_alpha
+      ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+  
+    }
+  
+  }
 
   if (!is.null(boundary)) {
       boundary = (
@@ -225,6 +235,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
         fraction_todrop = p$fraction_todrop,
         fraction_cv = p$fraction_cv,  # stopping criterion: when cv drops below this value
         nAU_min = p$nAU_min,   # stoppping criterion: allow no less than this number of areal units
+        count_time = count_time,
         verbose = verbose
       )  # voroni tesslation and delaunay triagulation
     }
