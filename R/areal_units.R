@@ -280,12 +280,17 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   if (areal_units_constraint == "groundfish")  {
     message( "Constrain areal units to required number of groundfish survey locations by merging into adjacent AUs")
-    constraintdata = survey_db( DS="set.base", p=p )[, c("lon", "lat")]  #
+    constraintdata = groundfish_survey_db(DS="set.base", yrs=p$yrs )[, c("lon", "lat")]  #
   }
   
   if (areal_units_constraint == "snowcrab")    {
     message( "Constrain areal units to required number of snowcrab survey locations by merging into adjacent AUs")
     constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
+  }
+
+  if (areal_units_constraint == "survey")    {
+    message( "Constrain areal units to required number of aegis.survey locations by merging into adjacent AUs")
+    constraintdata = survey_db( p=p, DS="set.base" )[, c("lon", "lat")]  #
   }
 
   if ( sa_threshold_km2  == 0 ) {

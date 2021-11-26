@@ -18,8 +18,7 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
     constraintdata$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
     ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
     sppoly$npts[ match( names(ww), as.character(sppoly$internal_id) )] = ww
-    # constraintdata = NULL
-
+ 
     zeros = which( sppoly$npts == 0 )
     if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
     todrop = which( sppoly$npts < areal_units_constraint_nmin )
@@ -89,8 +88,6 @@ areal_units_constraint_filter = function( sppoly, areal_units_constraint_nmin, a
     }
 
   }
-
-
 
   # SA check
   sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
