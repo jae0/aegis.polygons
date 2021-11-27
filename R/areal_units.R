@@ -2,7 +2,7 @@
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
   use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
-      areal_units_to_drop=NULL, count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
+      count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -62,30 +62,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
 
   if (!redo) {
     if ( file.exists(areal_units_fn_full) ) load(areal_units_fn_full)
-
-    if (!is.null(areal_units_to_drop)) {
-      sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
-      
-     
-      W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  
-      W.remove = which(card(W.nb) == 0)
-
-      if ( length(W.remove) > 0 ) {
-        # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
-        W.keep = which(card(W.nb) > 0)
-        W.nb = nb_remove( W.nb, W.remove )
-        sppoly = sppoly[W.keep,]
-        row.names(sppoly) = sppoly$AUID
-        sppoly = sppoly[order(sppoly$AUID),]
-        sppoly = st_make_valid(sppoly)
-      }
-
-      nb = INLA::inla.read.graph( spdep::nb2mat( W.nb ))
-      attr(nb, "region.id") = sppoly$AUID
-      attr(sppoly, "nb") = nb  # adding neighbourhood as an attribute to sppoly
-      attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
-
-    } 
     if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
     if ( !is.null(sppoly) ) return(sppoly)
   }
@@ -112,7 +88,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     # This adds some variabilty relative to "statanal" (which uses sa in sq nautical miles, btw)
     areal_units_timeperiod = "pre2014"
     sppoly = maritimes_groundfish_strata( areal_units_timeperiod = areal_units_timeperiod  )
-    # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers
+    # prep fields required to help extract results from model fits and compute estimates of biomass given mean size and mean numbers`
     sppoly$AUID = as.character(sppoly$AUID)
     row.names(sppoly) = sppoly$AUID
   }
@@ -425,30 +401,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
 
   if (plotit) plot(sppoly["au_sa_km2"])
- 
-  if (!is.null(areal_units_to_drop)) {
-      sppoly = sppoly[ - which(sppoly$AUID %in% areal_units_to_drop) ,]
-      
-      W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  
-      W.remove = which(card(W.nb) == 0)
-
-      if ( length(W.remove) > 0 ) {
-        # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
-        W.keep = which(card(W.nb) > 0)
-        W.nb = nb_remove( W.nb, W.remove )
-        sppoly = sppoly[W.keep,]
-        row.names(sppoly) = sppoly$AUID
-        sppoly = sppoly[order(sppoly$AUID),]
-        sppoly = st_make_valid(sppoly)
-      }
-
-      nb = INLA::inla.read.graph( spdep::nb2mat( W.nb ))
-      attr(nb, "region.id") = sppoly$AUID
-      attr(sppoly, "nb") = nb  # adding neighbourhood as an attribute to sppoly
-      attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
-
-    } 
- 
+  
  
   return( sppoly )
 
