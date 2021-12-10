@@ -1,6 +1,6 @@
 
 
-areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
+areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
   use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
       count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
@@ -53,8 +53,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, plotit=FALSE, sa_thres
     sep="|"
   )
 
-  areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )
-  areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
+  if ( !is.null(areal_units_fn_full) ) areal_units_directory =  dirname(areal_units_fn_full)
+
+  if ( is.null(areal_units_fn_full) )  {
+    if ( is.null(areal_units_directory) )  areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )
+    areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
+  }
 
 
   sppoly = NULL
