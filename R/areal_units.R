@@ -60,7 +60,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
   }
 
-
+  dir.create( areal_units_directory, showWarnings = FALSE, recursive = TRUE )
+  
   sppoly = NULL
   boundary = NULL
 
