@@ -66,9 +66,13 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   boundary = NULL
 
   if (!redo) {
-    if ( file.exists(areal_units_fn_full) ) load(areal_units_fn_full)
-    if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
-    if ( !is.null(sppoly) ) return(sppoly)
+    if ( file.exists(areal_units_fn_full) ) {
+      load(areal_units_fn_full)
+      if (!is.null(sppoly)) {
+        if ( !is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
+        if ( !is.null( sppoly ) ) return(sppoly)
+      }
+    }
   }
 
   message( "Creating areal units: ", areal_units_fn_full)
