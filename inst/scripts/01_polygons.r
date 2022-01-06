@@ -38,7 +38,7 @@ for ( areal_units_resolution_km in c(5, 10, 20, 25) ) {
 
   # load helper functions
   project.library( "aegis" )
-  Rlibrary( "rgdal", "sp", "raster", "maps", "mapdata")
+  RLibrary( "rgdal", "sp", "raster", "maps", "mapdata")
 
   p = list() # start parameter list
 
