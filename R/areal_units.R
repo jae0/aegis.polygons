@@ -173,8 +173,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }  else {
 
       message( "Determining areal unit domain boundary from input: xydata")
-      message( "If you get strange results, try increasing the value of hull_alpha=15 (granularity in km )")
-      
+      message( "If you get strange results (due to sparsity), try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km )")
+      message( "The current hull_alpha is: ", hull_alpha )
       boundary = st_sfc( st_multipoint( non_convex_hull(
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
         alpha=hull_alpha
@@ -189,6 +189,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         boundary
         %>% st_cast("POLYGON" )
         %>% st_make_valid()
+        %>% st_simplify()
         %>% st_buffer( areal_units_resolution_km/10 )
         %>% st_union()
         %>% st_cast("POLYGON" )
@@ -208,7 +209,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }
 
     if ( areal_units_type == "tesselation" ) {
-      message( "Determining areal units via iterative tesselation and dissolving AUs")
+      message( "Determining areal units via iterative Voroni tesselation of AU centroids and dissolution of AUs")
       sppoly = aegis_mesh(
         pts=xydata,
         boundary=boundary,
