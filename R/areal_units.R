@@ -173,7 +173,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }  else {
 
       message( "Determining areal unit domain boundary from input: xydata")
-      message( "If you get strange results (due to sparsity), try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km )")
+      message( "If you get strange boundary outlines (due to data sparsity),")
+      message(" try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km.")
       message( "The current hull_alpha is: ", hull_alpha )
       boundary = st_sfc( st_multipoint( non_convex_hull(
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
