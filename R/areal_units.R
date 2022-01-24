@@ -49,6 +49,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     areal_units_constraint,
     areal_units_constraint_ntarget,
     areal_units_constraint_nmin,
+    areal_units_timeperiod,
     paste0(areal_units_overlay, collapse="~"),
     sep="|"
   )
@@ -183,6 +184,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
     }
   
+  }
+
+  if (0){
+    plot( xydata, reset=FALSE )
+    plot( boundary, add=TRUE )
+
   }
 
   if (!is.null(boundary)) {
