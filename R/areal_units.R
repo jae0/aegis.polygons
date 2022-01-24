@@ -37,6 +37,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   areal_units_type =  ifelse (exists("areal_units_type", p), p$areal_units_type, "tesselation" )
   areal_units_overlay =  ifelse (exists("areal_units_overlay", p), p$areal_units_overlay, "none" )
   areal_units_constraint =  ifelse (exists("areal_units_constraint", p), p$areal_units_constraint, "none" )
+  areal_units_timeperiod =  ifelse (exists("areal_units_timeperiod", p), p$areal_units_timeperiod, "none" )
+  
   areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)
   areal_units_constraint_ntarget =  ifelse (exists("areal_units_constraint_ntarget", p), p$areal_units_constraint_ntarget, 0)
 
