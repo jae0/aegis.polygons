@@ -44,7 +44,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
 
   areal_units_fn = paste(
-    project_name,
     spatial_domain,
     areal_units_type,
     areal_units_resolution_km,
@@ -59,7 +58,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   if ( !is.null(areal_units_fn_full) ) areal_units_directory =  dirname(areal_units_fn_full)
 
   if ( is.null(areal_units_fn_full) )  {
-    if ( is.null(areal_units_directory) )  areal_units_directory = project.datadirectory("aegis", "polygons", "areal_units" )
+    if ( is.null(areal_units_directory) )  areal_units_directory = file.path( project.datadirectory( project_name), "data", "areal_units" )
     areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
   }
 
