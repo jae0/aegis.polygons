@@ -53,7 +53,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     areal_units_constraint_nmin,
     areal_units_timeperiod,
     paste0(areal_units_overlay, collapse="~"),
-    sep="|"
+    sep="~"
   )
 
   if ( !is.null(areal_units_fn_full) ) areal_units_directory =  dirname(areal_units_fn_full)
