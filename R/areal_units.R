@@ -58,7 +58,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   if ( !is.null(areal_units_fn_full) ) areal_units_directory =  dirname(areal_units_fn_full)
 
   if ( is.null(areal_units_fn_full) )  {
-    if ( is.null(areal_units_directory) )  areal_units_directory = file.path( project.datadirectory( project_name), "data", "areal_units" )
+    if ( is.null(areal_units_directory) )  areal_units_directory = file.path( p$datadir, "areal_units" )
     areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
   }
 
@@ -266,8 +266,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     sppoly = st_difference( sppoly, coast)
     coast = NULL
 
-
-
+ 
     # --------------------
     # Overlays
     message( "Filtering areal units on overlays")
@@ -378,6 +377,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 # overalys of other areal units not directly related to AU's ( eg. large management areas /zones
 # ... but they require SA estimates after any filters (above))
   if ( grepl("snowcrab_managementareas", areal_units_overlay) ) {
+ 
     # as a last pass, calculate surface areas of each subregion .. could be done earlier but it is safer done here due to deletions above
     if (verbose) message("Computing surface areas for each subarea ... can be slow if this is your first time")
     for (subarea in c("cfanorth", "cfasouth", "cfa23", "cfa24", "cfa4x" ) ) {
@@ -418,10 +418,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
   save(sppoly, file=areal_units_fn_full, compress=TRUE)
+  message( "Saved polygons as: ", areal_units_fn_full )
 
   if (plotit) plot(sppoly["au_sa_km2"])
-  
- 
+   
   return( sppoly )
 
 }
