@@ -23,6 +23,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
+  if (exists("hull_alpha", p)) hull_alpha = p$hull_alpha
 
   # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh"
   # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
