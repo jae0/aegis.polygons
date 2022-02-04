@@ -155,7 +155,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       message( "Determining areal unit domain boundary from snowcrab survey")
       boundary = polygon_managementareas( species="snowcrab" )
       boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
-      boundary = st_buffer(boundary, 0)
+      boundary = st_buffer(boundary, 0)  
       boundary = st_make_valid(boundary)
 
       data_boundary = st_sfc( st_multipoint( non_convex_hull(
@@ -172,6 +172,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
           %>% st_make_valid()
         )
       boundary = st_intersection(data_boundary, boundary)
+      boundary = st_buffer( boundary, areal_units_resolution_km * 3 )
 
     }  else {
 
@@ -183,6 +184,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
         alpha=hull_alpha
       ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+
+      boundary = st_buffer( boundary, areal_units_resolution_km * 3 )
   
     }
   
