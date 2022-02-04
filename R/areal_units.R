@@ -529,3 +529,5 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   return( sppoly )
 
 }
+
+
