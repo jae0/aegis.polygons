@@ -250,7 +250,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       %>% st_collection_extract("POLYGON")
       %>% st_cast( "POLYGON" )
     )
-    boundary = NULL
   }
 
     #  remove.coastline
@@ -272,51 +271,152 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     # Overlays
     message( "Filtering areal units on overlays")
 
-      sppoly = areal_units_overlay_filter(
-        sppoly = sppoly,
-        areal_units_overlay = areal_units_overlay,
-        areal_units_resolution_km = areal_units_resolution_km,
-        areal_units_proj4string_planar_km = areal_units_proj4string_planar_km,
-        inputdata_spatial_discretization_planar_km = inputdata_spatial_discretization_planar_km ,
-        areal_units_timeperiod = areal_units_timeperiod   # only useful for groundfish
-      )
+    sppoly = areal_units_overlay_filter(
+      sppoly = sppoly,
+      areal_units_overlay = areal_units_overlay,
+      areal_units_resolution_km = areal_units_resolution_km,
+      areal_units_proj4string_planar_km = areal_units_proj4string_planar_km,
+      inputdata_spatial_discretization_planar_km = inputdata_spatial_discretization_planar_km ,
+      areal_units_timeperiod = areal_units_timeperiod   # only useful for groundfish
+    )
 
-  # --------------------
-  # Additional Constraints from other data
 
-  if (areal_units_constraint == "groundfish")  {
-    message( "Constrain areal units to required number of groundfish survey locations by merging into adjacent AUs")
-    constraintdata = groundfish_survey_db(DS="set.base", yrs=p$yrs )[, c("lon", "lat")]  #
-  }
+
+  if ( !is.null(constraintdata)) {
+    # --------------------
+    # Additional Constraints from other data
+
+    if (areal_units_constraint == "groundfish")  {
+      message( "Constrain areal units to required number of groundfish survey locations by merging into adjacent AUs")
+      constraintdata = groundfish_survey_db(DS="set.base", yrs=p$yrs )[, c("lon", "lat")]  #
+    }
+    
+    if (areal_units_constraint == "snowcrab")    {
+      message( "Constrain areal units to required number of snowcrab survey locations by merging into adjacent AUs")
+      constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
+    }
+
+    if (areal_units_constraint == "survey")    {
+      message( "Constrain areal units to required number of aegis.survey locations by merging into adjacent AUs")
+      constraintdata = survey_db( p=p, DS="set.base" )[, c("lon", "lat")]  #
+    }
+
+
+    sppoly$npts  = 0
+    sppoly$internal_id = 1:nrow(sppoly)
+    row.names( sppoly) = sppoly$internal_id
+
+    sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
+    sppoly$au_sa_km2 = st_area(sppoly)
+    attributes( sppoly$au_sa_km2 ) = NULL
+
+    constraintdata = sf::st_as_sf( constraintdata, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
+    constraintdata = st_transform( constraintdata, st_crs(areal_units_proj4string_planar_km ))
+    # constraintdata = st_join( constraintdata, sppoly, join=st_within )
+    constraintdata$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
+    ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
+    sppoly$npts[ match( names(ww), as.character(sppoly$internal_id) )] = ww
+ 
+    zeros = which( sppoly$npts == 0 )
+    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+    
+
+    # This section needs to be reworked :: 
+    # NOTE:  areal_units_constraint_nmin already operates in the tesselation
+    # dropping causes too many data points from being dropped too (esp near boudndaries .,,  must make it respect boundary)
+
+    # todrop = which( sppoly$npts < areal_units_constraint_nmin )
+
+    # if (length(todrop) > 0 ) {
+
+    #   if (areal_units_type == "lattice" ) {
+    #     # laatice structure is required, simply drop where there is no data
+    #     sppoly = sppoly[ -todrop , ]
+
+    #   } else {
+    #     # already done in tesselation method so not really needed but
+    #     # try to join to adjacent au's
+    #     # for other methods, this ensures a min no samples in each AU
+    #     sppoly$dropflag = FALSE
+    #     sppoly$nok = TRUE
+    #     sppoly$nok[todrop] = FALSE
+    #     W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+    #     for (i in order(sppoly$npts) ) {
+    #       if ( sppoly$nok[i]) next()
+    #       lnb = W.nb[[ i ]]
+    #       if (lnb < 1) next()
+    #       local_finished = FALSE
+    #       for (f in 1:length(lnb) ) {
+    #         if (local_finished) break()
+    #         v = setdiff( 
+    #           intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
+    #           which(sppoly$dropflag)                       ## AUs confirmed already to drop
+    #         )
+    #         if (length(v) > 0) {
+    #           j = v[ which.min( sppoly$npts[v] )]
+    #           g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+    #           if ( !inherits(g_ij, "try-error" )) {
+    #             st_geometry(sppoly)[j] = g_ij
+    #             sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+    #             sppoly$nok[i] = FALSE
+    #             sppoly$dropflag[i] = TRUE
+    #             if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
+    #               local_finished=TRUE
+    #               sppoly$nok[j] = TRUE
+    #             }
+    #           }
+    #         }
+            
+    #       }
+
+    #     }
+    #     # final check
+    #     toofew = which( sppoly$npts < areal_units_constraint_nmin )
+    #     if (length(toofew) > 0) sppoly$dropflag[toofew] = TRUE
+
+    #     sppoly = sppoly[ - which( sppoly$dropflag ), ]
+    #     sppoly$nok =NULL
+    #   }
+
+    #   # update counts
+    #   ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
+    #   sppoly$npts = 0
+    #   oo = match( names(ww), as.character(sppoly$internal_id) )
+    #   ii = which(is.finite(oo))
+    #   sppoly$npts[ oo[ii] ] = ww[ii]
+      
+    #   sppoly$internal_id = NULL
+    #   sppoly = st_make_valid(sppoly)
+
+    #   message( "Dropping due to areal_units_constraint_nmin, now there are : ", nrow(sppoly), " areal units." )
+    # }
+
+  # message( "Applying constraints leaves: ",  nrow(sppoly), " areal units." )
+
+  # return(sppoly)
+
   
-  if (areal_units_constraint == "snowcrab")    {
-    message( "Constrain areal units to required number of snowcrab survey locations by merging into adjacent AUs")
-    constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
+  if ( nrow( sppoly) == 0 ) {
+    message ( "No polygons meet the specified criteria (check sa_threshold_km2 ?)." )
+    browser()
   }
 
-  if (areal_units_constraint == "survey")    {
-    message( "Constrain areal units to required number of aegis.survey locations by merging into adjacent AUs")
-    constraintdata = survey_db( p=p, DS="set.base" )[, c("lon", "lat")]  #
-  }
+}
 
+
+  # SA check
   if ( sa_threshold_km2  == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
   }
-
-
-  sppoly = areal_units_constraint_filter(
-    sppoly=sppoly,
-    areal_units_type = areal_units_type,
-    areal_units_constraint_nmin = areal_units_constraint_nmin,
-    areal_units_proj4string_planar_km=areal_units_proj4string_planar_km,
-    sa_threshold_km2 = sa_threshold_km2,
-    constraintdata = constraintdata
-  )
+  sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
+  sppoly$au_sa_km2 = st_area(sppoly)
+  attributes( sppoly$au_sa_km2 ) = NULL
+  toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
+  if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
 
   # --------------------
   # completed mostly, final filters where required
-
 
   sppoly = st_make_valid(sppoly)
   if (!exists( "AUID", sppoly)) sppoly[, "AUID"]  = as.character( 1:nrow(sppoly) )
