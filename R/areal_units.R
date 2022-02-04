@@ -320,8 +320,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
     sppoly$npts[ match( names(ww), as.character(sppoly$internal_id) )] = ww
  
-    zeros = which( sppoly$npts == 0 )
-    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+    # zeros = which( sppoly$npts == 0 )
+    # if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
     
 
     # This section needs to be reworked :: 
@@ -407,15 +407,15 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 }
 
 
-  # SA check
-  if ( sa_threshold_km2  == 0 ) {
-    if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
-  }
-  sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
-  sppoly$au_sa_km2 = st_area(sppoly)
-  attributes( sppoly$au_sa_km2 ) = NULL
-  toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
-  if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
+  # # SA check
+  # if ( sa_threshold_km2  == 0 ) {
+  #   if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
+  # }
+  # sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
+  # sppoly$au_sa_km2 = st_area(sppoly)
+  # attributes( sppoly$au_sa_km2 ) = NULL
+  # toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
+  # if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
 
   # --------------------
