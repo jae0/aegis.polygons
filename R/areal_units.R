@@ -408,14 +408,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
 
   # # SA check
-  # if ( sa_threshold_km2  == 0 ) {
-  #   if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
-  # }
-  # sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
-  # sppoly$au_sa_km2 = st_area(sppoly)
-  # attributes( sppoly$au_sa_km2 ) = NULL
-  # toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
-  # if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
+  if ( sa_threshold_km2  == 0 ) {
+    if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
+  }
+  sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
+  sppoly$au_sa_km2 = st_area(sppoly)
+  attributes( sppoly$au_sa_km2 ) = NULL
+  toremove = which( sppoly$au_sa_km2 < sa_threshold_km2 )
+  if ( length(toremove) > 0 ) sppoly = sppoly[-toremove,]  # problematic as it is so small and there is no data there?
 
 
   # --------------------
