@@ -320,8 +320,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
     sppoly$npts[ match( names(ww), as.character(sppoly$internal_id) )] = ww
  
-    # zeros = which( sppoly$npts == 0 )
-    # if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+    zeros = which( sppoly$npts == 0 )
+    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
     
 
     # This section needs to be reworked :: 
