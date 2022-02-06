@@ -328,7 +328,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         sppoly = sppoly[ -todrop , ]
 
       } else {
- browser()
+
         # try to join to adjacent au's
         for ( gbl in 1:5 ) {
           sppoly$dropflag = FALSE
