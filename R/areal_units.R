@@ -479,6 +479,15 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }
   }
 
+  # update counts
+  sppoly$internal_id = 1:nrow(sppoly)
+  row.names( sppoly) = sppoly$internal_id
+  cdd = setDT( st_drop_geometry( constraintdata ) )
+  cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
+  cdd = cdd[,.(npts=.N), .(internal_id) ]
+  sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
+    
+  sppoly$internal_id = NULL
 
     # ------------------------------------------------
   sppoly$au_sa_km2 = st_area( sppoly )
