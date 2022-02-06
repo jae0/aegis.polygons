@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, constraintdata=NULL, spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL,  spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
       count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
@@ -13,7 +13,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     hull_alpha = 15
     rastermethod="sf"
     xydata=NULL
-    constraintdata=NULL
     duplications_action="union"
     areal_units_timeperiod=NULL
     verbose=TRUE
@@ -139,10 +138,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   }
   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
 
-  if (respect_spatial_domain) {
-    xydata = xydata[ geo_subset( spatial_domain=spatial_domain, Z=xydata ) , ]
-  }
-
   if ( areal_units_type %in% c( "stratanal_polygons_pre2014", "stratanal_polygons", "groundfish_strata", "stratanal_polygons_post2014") ) {
     message( "Determining areal unit domain boundary from groundfish survey")
     boundary = maritimes_fishery_boundary( DS="groundfish", internal_resolution_km=1, crs_km=st_crs(areal_units_proj4string_planar_km) ) # post 2014 is larger (crm is for incoming data)
@@ -157,9 +152,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
       boundary = st_buffer(boundary, 0)  
       boundary = st_make_valid(boundary)
-
+    
       data_boundary = st_sfc( st_multipoint( non_convex_hull(
-        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
+        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ),  
         alpha=hull_alpha
         ) ), crs=st_crs(areal_units_proj4string_planar_km) )
       data_boundary = (
@@ -215,7 +210,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     if ( areal_units_type == "inla_mesh" ) {
       message( "Determining areal units as an INLA mesh")
       sppoly = areal_units_inla_mesh(
-        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) , # add  noise  to prevent a race condition
+        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ) , # add  noise  to prevent a race condition
         areal_units_resolution_km=areal_units_resolution_km,
         areal_units_proj4string_planar_km=areal_units_proj4string_planar_km
       )
@@ -239,11 +234,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       )  # voroni tesslation and delaunay triagulation
     }
 
-    xydata = NULL
-
-
   if (is.null(sppoly)) stop("Error in areal units: none found")
-
 
   if (!is.null(boundary)) {
     # must be done separately (after all areal)unit_types has been processed)
@@ -270,6 +261,119 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     coast = NULL
 
  
+
+
+    # --------------------
+    # Additional Constraints from other data
+    constraintdata = NULL
+
+    if (areal_units_constraint == "groundfish")  {
+      message( "Constrain areal units to required number of groundfish survey locations by merging into adjacent AUs")
+      constraintdata = groundfish_survey_db(DS="set.base", yrs=p$yrs )[, c("lon", "lat")]  #
+    }
+ 
+    if (areal_units_constraint == "survey")    {
+      message( "Constrain areal units to required number of aegis.survey locations by merging into adjacent AUs")
+      constraintdata = survey_db( p=p, DS="set.base" )[, c("lon", "lat")]  #
+    }
+
+    if (!is.null(constraintdata)) {
+      constraintdata = sf::st_as_sf( constraintdata, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
+      constraintdata = st_transform( constraintdata, st_crs(areal_units_proj4string_planar_km ))
+    }
+
+    if (is.null(constraintdata)) constraintdata = xydata
+    xydata = NULL
+ 
+
+    # count
+    sppoly$internal_id = 1:nrow(sppoly)
+    row.names( sppoly) = sppoly$internal_id
+    cdd = setDT( st_drop_geometry( constraintdata ) )
+    cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
+    cdd = cdd[,.(npts=.N), .(internal_id) ]
+    sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
+ 
+    zeros = which( sppoly$npts == 0 )
+    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
+ 
+    todrop = which( sppoly$npts < areal_units_constraint_nmin )
+    if (length(todrop) > 0 ) {
+
+      if (areal_units_type == "lattice" ) {
+        # lattice structure is required, simply drop where there is no data
+        sppoly = sppoly[ -todrop , ]
+
+      } else {
+ 
+        # try to join to adjacent au's
+        sppoly$dropflag = FALSE
+        sppoly$nok = TRUE
+        sppoly$nok[todrop] = FALSE
+        W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+        for (i in order(sppoly$npts) ) {
+          if ( sppoly$nok[i]) next()
+          lnb = W.nb[[ i ]]
+          if (lnb < 1) next()
+          local_finished = FALSE
+          for (f in 1:length(lnb) ) {
+            if (local_finished) break()
+            v = setdiff( 
+              intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
+              which(sppoly$dropflag)                       ## AUs confirmed already to drop
+            )
+            if (length(v) > 0) {
+              j = v[ which.min( sppoly$npts[v] )]
+              if (length(j)>0) {
+                g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+                if ( !inherits(g_ij, "try-error" )) {
+                  st_geometry(sppoly)[j] = g_ij
+                  sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+                  sppoly$nok[i] = FALSE
+                  sppoly$dropflag[i] = TRUE
+                  if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
+                    local_finished=TRUE
+                    sppoly$nok[j] = TRUE
+                  }
+                }
+              }
+            }
+          }
+        }
+        # final check
+        toofew = which( sppoly$npts < areal_units_constraint_nmin )
+        if (length(toofew) > 0) sppoly$dropflag[toofew] = TRUE
+
+        sppoly = sppoly[ - which( sppoly$dropflag ), ]
+        sppoly$nok =NULL
+
+        sppoly = tessellate(st_coordinates(st_centroid(sppoly)), outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
+        sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
+        message( "After tesselation, there are:  ", nrow(sppoly), " areal units." )
+
+      }
+       # update counts
+      sppoly$internal_id = 1:nrow(sppoly)
+      row.names( sppoly) = sppoly$internal_id
+      cdd = setDT( st_drop_geometry( constraintdata ) )
+      cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
+      cdd = cdd[,.(npts=.N), .(internal_id) ]
+      sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
+        
+      sppoly$internal_id = NULL
+      sppoly = st_make_valid(sppoly)
+
+    }
+ 
+    message( "Applying constraints leaves: ",  nrow(sppoly), " areal units." )
+
+    if ( nrow( sppoly) == 0 ) {
+      message ( "No polygons meet the specified criteria (check sa_threshold_km2 ?)." )
+      browser()
+    }
+
+  
+  
     # --------------------
     # Overlays
     message( "Filtering areal units on overlays")
@@ -283,134 +387,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       areal_units_timeperiod = areal_units_timeperiod   # only useful for groundfish
     )
 
-
-
-  if ( !is.null(constraintdata)) {
-    # --------------------
-    # Additional Constraints from other data
-
-    if (areal_units_constraint == "groundfish")  {
-      message( "Constrain areal units to required number of groundfish survey locations by merging into adjacent AUs")
-      constraintdata = groundfish_survey_db(DS="set.base", yrs=p$yrs )[, c("lon", "lat")]  #
-    }
-    
-    if (areal_units_constraint == "snowcrab")    {
-      message( "Constrain areal units to required number of snowcrab survey locations by merging into adjacent AUs")
-      constraintdata = snowcrab.db( p=p, DS="set.clean" )[, c("lon", "lat")]  #
-    }
-
-    if (areal_units_constraint == "survey")    {
-      message( "Constrain areal units to required number of aegis.survey locations by merging into adjacent AUs")
-      constraintdata = survey_db( p=p, DS="set.base" )[, c("lon", "lat")]  #
-    }
-
-
-    sppoly$npts  = 0
-    sppoly$internal_id = 1:nrow(sppoly)
-    row.names( sppoly) = sppoly$internal_id
-
-    sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
-    sppoly$au_sa_km2 = st_area(sppoly)
-    attributes( sppoly$au_sa_km2 ) = NULL
-
-    constraintdata = sf::st_as_sf( constraintdata, coords = c("lon","lat"), crs=st_crs(projection_proj4string("lonlat_wgs84")) )
-    constraintdata = st_transform( constraintdata, st_crs(areal_units_proj4string_planar_km ))
-    # constraintdata = st_join( constraintdata, sppoly, join=st_within )
-    constraintdata$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
-    ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
-    sppoly$npts[ match( names(ww), as.character(sppoly$internal_id) )] = ww
- 
-    zeros = which( sppoly$npts == 0 )
-    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
-    
-
-    # This section needs to be reworked :: 
-    # NOTE:  areal_units_constraint_nmin already operates in the tesselation
-    # dropping causes too many data points from being dropped too (esp near boudndaries .,,  must make it respect boundary)
-
-    # todrop = which( sppoly$npts < areal_units_constraint_nmin )
-
-    # if (length(todrop) > 0 ) {
-
-    #   if (areal_units_type == "lattice" ) {
-    #     # laatice structure is required, simply drop where there is no data
-    #     sppoly = sppoly[ -todrop , ]
-
-    #   } else {
-    #     # already done in tesselation method so not really needed but
-    #     # try to join to adjacent au's
-    #     # for other methods, this ensures a min no samples in each AU
-    #     sppoly$dropflag = FALSE
-    #     sppoly$nok = TRUE
-    #     sppoly$nok[todrop] = FALSE
-    #     W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
-    #     for (i in order(sppoly$npts) ) {
-    #       if ( sppoly$nok[i]) next()
-    #       lnb = W.nb[[ i ]]
-    #       if (lnb < 1) next()
-    #       local_finished = FALSE
-    #       for (f in 1:length(lnb) ) {
-    #         if (local_finished) break()
-    #         v = setdiff( 
-    #           intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
-    #           which(sppoly$dropflag)                       ## AUs confirmed already to drop
-    #         )
-    #         if (length(v) > 0) {
-    #           j = v[ which.min( sppoly$npts[v] )]
-    #           g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
-    #           if ( !inherits(g_ij, "try-error" )) {
-    #             st_geometry(sppoly)[j] = g_ij
-    #             sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-    #             sppoly$nok[i] = FALSE
-    #             sppoly$dropflag[i] = TRUE
-    #             if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
-    #               local_finished=TRUE
-    #               sppoly$nok[j] = TRUE
-    #             }
-    #           }
-    #         }
-            
-    #       }
-
-    #     }
-    #     # final check
-    #     toofew = which( sppoly$npts < areal_units_constraint_nmin )
-    #     if (length(toofew) > 0) sppoly$dropflag[toofew] = TRUE
-
-    #     sppoly = sppoly[ - which( sppoly$dropflag ), ]
-    #     sppoly$nok =NULL
-    #   }
-
-    #   # update counts
-    #   ww = tapply( rep(1, nrow(constraintdata)), constraintdata$internal_id, sum, na.rm=T )
-    #   sppoly$npts = 0
-    #   oo = match( names(ww), as.character(sppoly$internal_id) )
-    #   ii = which(is.finite(oo))
-    #   sppoly$npts[ oo[ii] ] = ww[ii]
-      
-    #   sppoly$internal_id = NULL
-    #   sppoly = st_make_valid(sppoly)
-
-    #   message( "Dropping due to areal_units_constraint_nmin, now there are : ", nrow(sppoly), " areal units." )
-    # }
-
-  # message( "Applying constraints leaves: ",  nrow(sppoly), " areal units." )
-
-  # return(sppoly)
-
-  
-  if ( nrow( sppoly) == 0 ) {
-    message ( "No polygons meet the specified criteria (check sa_threshold_km2 ?)." )
-    browser()
-  }
-
-}
-
-
   # # SA check
   if ( sa_threshold_km2  == 0 ) {
     if ( exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
   }
+
+
   sppoly = st_transform( sppoly, st_crs( areal_units_proj4string_planar_km ))
   sppoly$au_sa_km2 = st_area(sppoly)
   attributes( sppoly$au_sa_km2 ) = NULL
