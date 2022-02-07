@@ -163,25 +163,19 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = polygon_managementareas( species="snowcrab" )
       boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
       boundary = st_buffer(boundary, 0)  
+      boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
     
       data_boundary = st_sfc( st_multipoint( non_convex_hull(
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ),  
         alpha=hull_alpha
-        ) ), crs=st_crs(areal_units_proj4string_planar_km) )
-      boundary =  st_cast(boundary, "POLYGON" )
+        ) ), crs=st_crs(areal_units_proj4string_planar_km) 
+      )
+      data_boundary =  st_cast(data_boundary, "POLYGON" )
+      data_boundary = st_make_valid(data_boundary)
 
-      data_boundary = (
-          data_boundary
-          %>% st_make_valid()
-          %>% st_buffer( areal_units_resolution_km/10 )
-          %>% st_union()
-          %>% st_cast("POLYGON" )
-          %>% st_make_valid()
-        )
       boundary = st_intersection(data_boundary, boundary)
-      boundary = st_buffer( boundary, areal_units_resolution_km * 3 )
-
+  
   }  
   
   if (is.null(boundary)) {
@@ -210,6 +204,19 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   }
   
+    #  remove.coastline
+    require(aegis.coastline)
+    coast = (
+        coastline_db( p=p, DS="eastcoast_gadm" )
+        %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
+        %>% st_simplify()
+        %>% st_buffer(inputdata_spatial_discretization_planar_km )
+        %>% st_union()
+    )
+
+    boundary = st_difference( boundary, coast)
+    coast = NULL
+
   
   if (0){
     plot( xydata, reset=FALSE )
@@ -255,23 +262,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       %>% st_cast( "POLYGON" )
     )
   }
-
-    #  remove.coastline
-    require(aegis.coastline)
-    coast = (
-        coastline_db( p=p, DS="eastcoast_gadm" )
-        %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
-        %>% st_simplify()
-        %>% st_buffer(inputdata_spatial_discretization_planar_km )
-        %>% st_union()
-    )
-
-    sppoly = st_transform( sppoly, st_crs(areal_units_proj4string_planar_km) )
-    sppoly = st_difference( sppoly, coast)
-    coast = NULL
-
  
-
 
     # --------------------
     # Additional Constraints from other data
@@ -309,6 +300,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     if (is.null(constraintdata)) constraintdata = xydata
     xydata = NULL
   
+    message(" Merging adjacent AU's to target no of data points ..")
+
     # count
     sppoly$internal_id = 1:nrow(sppoly)
     row.names( sppoly) = sppoly$internal_id
@@ -330,41 +323,38 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       } else {
 
         # try to join to adjacent au's
-        for ( gbl in 1:5 ) {
-          sppoly$dropflag = FALSE
-          sppoly$nok = TRUE
-          sppoly$nok[todrop] = FALSE
-          W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
-          for (i in order(sppoly$npts) ) {
-            if ( sppoly$nok[i]) next()
-            lnb = W.nb[[ i ]]
-            if (length(lnb) < 1) next()
-            local_finished = FALSE
-            for (f in 1:length(lnb) ) {
-              if (local_finished) break()
-              v = setdiff( 
-                intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
-                which(sppoly$dropflag)                       ## AUs confirmed already to drop
-              )
-              if (length(v) > 0) {
-                j = v[ which.min( sppoly$npts[v] )]
-                if (length(j)>0) {
-                  g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
-                  if ( !inherits(g_ij, "try-error" )) {
-                    st_geometry(sppoly)[j] = g_ij
-                    sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-                    sppoly$nok[i] = FALSE
-                    sppoly$dropflag[i] = TRUE
-                    if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
-                      local_finished=TRUE
-                      sppoly$nok[j] = TRUE
-                    }
+        sppoly$dropflag = FALSE
+        sppoly$nok = TRUE
+        sppoly$nok[todrop] = FALSE
+        W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+        for (i in order(sppoly$npts) ) {
+          if ( sppoly$nok[i]) next()
+          lnb = W.nb[[ i ]]
+          if (length(lnb) < 1) next()
+          local_finished = FALSE
+          for (f in 1:length(lnb) ) {
+            if (local_finished) break()
+            v = setdiff( 
+              intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
+              which(sppoly$dropflag)                       ## AUs confirmed already to drop
+            )
+            if (length(v) > 0) {
+              j = v[ which.min( sppoly$npts[v] )]
+              if (length(j)>0) {
+                g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+                if ( !inherits(g_ij, "try-error" )) {
+                  st_geometry(sppoly)[j] = g_ij
+                  sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+                  sppoly$nok[i] = FALSE
+                  sppoly$dropflag[i] = TRUE
+                  if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
+                    local_finished=TRUE
+                    sppoly$nok[j] = TRUE
                   }
                 }
               }
             }
           }
-          if ( length( which( sppoly$npts [ which(!sppoly$dropflag) ] < areal_units_constraint_nmin) ) == 0 ) break()
         }
 
         # final check
@@ -376,7 +366,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
         sppoly = tessellate(st_coordinates(st_centroid(sppoly)), outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
         sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
-        message( "After tesselation, there are:  ", nrow(sppoly), " areal units." )
+        message( "After merging, there are:  ", nrow(sppoly), " areal units." )
 
       }
        # update counts
