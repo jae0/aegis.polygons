@@ -251,7 +251,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }
 
   if (is.null(sppoly)) stop("Error in areal units: none found")
-browser()
+
 
   if (!is.null(boundary)) {
     # must be done separately (after all areal)unit_types has been processed)
