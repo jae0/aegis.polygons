@@ -157,7 +157,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   } 
     
-  if ( project_name == "bio.snowcrab") {
+  if ( project_name == "biPo.snowcrab") {
     
       message( "Determining areal unit domain boundary from snowcrab survey")
       boundary = polygon_managementareas( species="snowcrab" )
@@ -174,7 +174,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       )
       data_boundary =  st_cast(data_boundary, "POLYGON" )
       data_boundary = st_make_valid(data_boundary)
-
+      data_boundary = st_buffer(data_boundary, 5)
       boundary = st_intersection(data_boundary, boundary)
   
   }  
