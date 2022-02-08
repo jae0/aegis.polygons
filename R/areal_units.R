@@ -2,7 +2,7 @@
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
   use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL,  spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
-      count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
+      count_time=TRUE, respect_spatial_domain=TRUE, nocylces=1, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -165,6 +165,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_buffer(boundary, 0)  
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
+      boundary = st_buffer(boundary, 5)  # expand distances a bit to include locs on boundary
     
       data_boundary = st_sfc( st_multipoint( non_convex_hull(
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ),  
@@ -300,7 +301,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     if (is.null(constraintdata)) constraintdata = xydata
     xydata = NULL
   
-    message(" Merging adjacent AU's to target no of data points ..")
+    message("Merging adjacent AU's to target no of data points: ")
 
     # count
     sppoly$internal_id = 1:nrow(sppoly)
@@ -313,16 +314,22 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     zeros = which( sppoly$npts == 0 )
     if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
  
-    todrop = which( sppoly$npts < areal_units_constraint_nmin )
-    if (length(todrop) > 0 ) {
 
-      if (areal_units_type == "lattice" ) {
-        # lattice structure is required, simply drop where there is no data
+    if (areal_units_type == "lattice" ) {
+      # lattice structure is required, simply drop where there is no data
+        todrop = which( sppoly$npts < areal_units_constraint_nmin )
+      if (length(todrop) > 0 ) {
         sppoly = sppoly[ -todrop , ]
+      }
 
-      } else {
+    } else {
 
-        # try to join to adjacent au's
+      # try to join to adjacent au's
+      for (uu in 1:nocylces ) {
+    
+        todrop = which( sppoly$npts < areal_units_constraint_nmin )
+        if (length(todrop) == 0 ) break()
+
         sppoly$dropflag = FALSE
         sppoly$nok = TRUE
         sppoly$nok[todrop] = FALSE
@@ -363,34 +370,34 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
         sppoly = sppoly[ - which( sppoly$dropflag ), ]
         sppoly$nok =NULL
-
-        sppoly = tessellate(st_coordinates(st_centroid(sppoly)), outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
-        sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
-        message( "After merging, there are:  ", nrow(sppoly), " areal units." )
+        message( "After merge, there are:  ", nrow(sppoly), " areal units." )
 
       }
-       # update counts
-      sppoly$internal_id = 1:nrow(sppoly)
-      row.names( sppoly) = sppoly$internal_id
-      cdd = setDT( st_drop_geometry( constraintdata ) )
-      cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
-      cdd = cdd[,.(npts=.N), .(internal_id) ]
-      sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
-        
-      sppoly$internal_id = NULL
-      sppoly = st_make_valid(sppoly)
+      
+      sppoly = tessellate(st_coordinates(st_centroid(sppoly)), outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
+      sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
 
     }
- 
-    message( "Applying constraints leaves: ",  nrow(sppoly), " areal units." )
+    
+      # update counts
+    sppoly$internal_id = 1:nrow(sppoly)
+    row.names( sppoly) = sppoly$internal_id
+    cdd = setDT( st_drop_geometry( constraintdata ) )
+    cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
+    cdd = cdd[,.(npts=.N), .(internal_id) ]
+    sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
+      
+    sppoly$internal_id = NULL
+    sppoly = st_make_valid(sppoly)
+
+    message( "Applying additional constraints leaves: ",  nrow(sppoly), " areal units." )
 
     if ( nrow( sppoly) == 0 ) {
       message ( "No polygons meet the specified criteria (check sa_threshold_km2 ?)." )
       browser()
     }
 
-  
-  
+    
     # --------------------
     # Overlays
     message( "Filtering areal units on overlays")
