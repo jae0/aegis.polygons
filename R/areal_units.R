@@ -2,7 +2,7 @@
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
   use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL,  spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
-      count_time=TRUE, respect_spatial_domain=TRUE, no_cylces=1, ... ) {
+      count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -185,6 +185,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       message(" try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km.")
       message( "The current hull_alpha is: ", hull_alpha )
       boundary = st_sfc( st_multipoint( non_convex_hull(
+
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ) ,  # noise increases complexity of edges -> better discrim of polys
         alpha=hull_alpha
       ) ), crs=st_crs(areal_units_proj4string_planar_km) )
@@ -251,7 +252,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }
 
   if (is.null(sppoly)) stop("Error in areal units: none found")
-
 
   if (!is.null(boundary)) {
     # must be done separately (after all areal)unit_types has been processed)
@@ -324,8 +324,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     } else {
 
       # try to join to adjacent au's
-      for (uu in 1:no_cylces ) {
-    
         todrop = which( sppoly$npts < areal_units_constraint_nmin )
         if (length(todrop) == 0 ) break()
 
@@ -370,9 +368,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         sppoly = sppoly[ - which( sppoly$dropflag ), ]
         sppoly$nok =NULL
         message( "After merge, there are:  ", nrow(sppoly), " areal units." )
-
-      }
-      
+    
       sppoly = tessellate(st_coordinates(st_centroid(sppoly)), outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
       sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
 
