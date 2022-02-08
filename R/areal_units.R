@@ -157,7 +157,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   } 
     
-  if ( project_name == "biPo.snowcrab") {
+  if ( project_name == "bio.snowcrab") {
     
       message( "Determining areal unit domain boundary from snowcrab survey")
       boundary = polygon_managementareas( species="snowcrab" )
@@ -180,18 +180,16 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   }  
   
   if (is.null(boundary)) {
-
       message( "Determining areal unit domain boundary from input: xydata")
       message( "If you get strange boundary outlines (due to data sparsity),")
       message(" try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km.")
       message( "The current hull_alpha is: ", hull_alpha )
       boundary = st_sfc( st_multipoint( non_convex_hull(
-        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-3, max=1e-3 ) ,  # noise increases complexity of edges -> better discrim of polys
+        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ) ,  # noise increases complexity of edges -> better discrim of polys
         alpha=hull_alpha
       ) ), crs=st_crs(areal_units_proj4string_planar_km) )
 
       boundary =  st_cast(boundary, "POLYGON" )
-
       boundary = st_buffer( boundary, areal_units_resolution_km * 3 )
 
       boundary = (
@@ -253,6 +251,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }
 
   if (is.null(sppoly)) stop("Error in areal units: none found")
+browser()
 
   if (!is.null(boundary)) {
     # must be done separately (after all areal)unit_types has been processed)
