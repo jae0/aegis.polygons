@@ -185,13 +185,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       message(" try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km.")
       message( "The current hull_alpha is: ", hull_alpha )
       boundary = st_sfc( st_multipoint( non_convex_hull(
-
         st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ) ,  # noise increases complexity of edges -> better discrim of polys
         alpha=hull_alpha
       ) ), crs=st_crs(areal_units_proj4string_planar_km) )
-
-      boundary =  st_cast(boundary, "POLYGON" )
-      boundary = st_buffer( boundary, areal_units_resolution_km * 3 )
 
       boundary = (
         boundary
@@ -199,6 +195,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         %>% st_simplify()
         %>% st_union()
         %>% st_cast("POLYGON" )
+        %>% st_buffer(inputdata_spatial_discretization_planar_km )
         %>% st_make_valid()
       )
 
