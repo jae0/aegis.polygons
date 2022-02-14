@@ -308,7 +308,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
 
     uu = which( !is.finite(sppoly$npts) )
-    if ( length(uu) > 0 ) sppoly = sppoly$npts[uu] = 0
+    if ( length(uu) > 0 ) sppoly$npts[uu] = 0
  
     if (areal_units_type == "lattice" ) {
       # lattice structure is required, simply drop where there is no data
