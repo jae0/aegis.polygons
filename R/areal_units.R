@@ -214,12 +214,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     boundary = st_difference( boundary, coast)
     coast = NULL
 
-  
-  if (0){
-    plot( xydata, reset=FALSE )
-    plot( boundary, add=TRUE )
-
-  }
+    
+    if (0){
+      plot( xydata, reset=FALSE )
+      plot( boundary, add=TRUE )
+    }
 
 
     if ( areal_units_type == "inla_mesh" ) {
@@ -338,22 +337,23 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
               intersect( lnb, which(sppoly$count_is_ok) ), ## AU neighbours that are OK and so can consider dropping
               which(sppoly$already_dropped)                       ## AUs confirmed already to drop
             )
-            if (length(v) > 0) {
-              j = v[ which.min( sppoly$npts[v] )]
-              if (length(j)>0) {
-                g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
-                if ( !inherits(g_ij, "try-error" )) {
-                  st_geometry(sppoly)[j] = g_ij
-                  sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-                  sppoly$count_is_ok[i] = FALSE
-                  sppoly$already_dropped[i] = TRUE
-                  if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
-                    local_finished=TRUE
-                    sppoly$count_is_ok[j] = TRUE
-                  }
+            if (length(v) == 0 ) break()
+
+            j = v[ which.min( sppoly$npts[v] )]
+            if (length(j)>0) {
+              g_ij = try( st_union( st_geometry(sppoly)[j] , st_geometry(sppoly)[i] ) )
+              if ( !inherits(g_ij, "try-error" )) {
+                st_geometry(sppoly)[j] = g_ij
+                sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
+                sppoly$count_is_ok[i] = FALSE
+                sppoly$already_dropped[i] = TRUE
+                if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
+                  local_finished=TRUE
+                  sppoly$count_is_ok[j] = TRUE
                 }
               }
             }
+
           }
         }
       }
