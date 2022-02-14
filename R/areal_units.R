@@ -306,10 +306,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
     cdd = cdd[,.(npts=.N), .(internal_id) ]
     sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
-    zeros = which( sppoly$npts == 0 )
-    if ( length(zeros) > 0 ) sppoly = sppoly[-zeros,]
- 
 
+    uu = which( !is.finite(sppoly$npts) )
+    if ( length(uu) > 0 ) sppoly = sppoly$npts[uu] = 0
+ 
     if (areal_units_type == "lattice" ) {
       # lattice structure is required, simply drop where there is no data
         todrop = which( sppoly$npts < areal_units_constraint_nmin )
@@ -320,23 +320,23 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     } else {
 
       # try to join to adjacent au's
-        todrop = which( sppoly$npts < areal_units_constraint_nmin )
-        if (length(todrop) == 0 ) break()
+      todrop = which( sppoly$npts < areal_units_constraint_nmin )
+      if (length(todrop) == 0 ) break()
 
-        sppoly$dropflag = FALSE
-        sppoly$nok = TRUE
-        sppoly$nok[todrop] = FALSE
-        W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
-        for (i in order(sppoly$npts) ) {
-          if ( sppoly$nok[i]) next()
-          lnb = W.nb[[ i ]]
-          if (length(lnb) < 1) next()
-          local_finished = FALSE
-          for (f in 1:length(lnb) ) {
-            if (local_finished) break()
+      sppoly$already_dropped = FALSE
+      sppoly$count_is_ok = TRUE
+      sppoly$count_is_ok[todrop] = FALSE
+      W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+      for (i in order(sppoly$npts) ) {
+        if ( sppoly$count_is_ok[i]) next()
+        lnb = W.nb[[ i ]]
+        if (length(lnb) < 1) next()
+        local_finished = FALSE
+        for (f in 1:length(lnb) ) {
+          if (!local_finished) {
             v = setdiff( 
-              intersect( lnb, which(sppoly$nok) ), ## AU neighbours that are OK and so can consider dropping
-              which(sppoly$dropflag)                       ## AUs confirmed already to drop
+              intersect( lnb, which(sppoly$count_is_ok) ), ## AU neighbours that are OK and so can consider dropping
+              which(sppoly$already_dropped)                       ## AUs confirmed already to drop
             )
             if (length(v) > 0) {
               j = v[ which.min( sppoly$npts[v] )]
@@ -345,32 +345,32 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
                 if ( !inherits(g_ij, "try-error" )) {
                   st_geometry(sppoly)[j] = g_ij
                   sppoly$npts[j] = sppoly$npts[j] + sppoly$npts[i]
-                  sppoly$nok[i] = FALSE
-                  sppoly$dropflag[i] = TRUE
+                  sppoly$count_is_ok[i] = FALSE
+                  sppoly$already_dropped[i] = TRUE
                   if ( sppoly$npts[j] >= areal_units_constraint_nmin) {
                     local_finished=TRUE
-                    sppoly$nok[j] = TRUE
+                    sppoly$count_is_ok[j] = TRUE
                   }
                 }
               }
             }
           }
         }
+      }
 
-        # final check
-        toofew = which( sppoly$npts < areal_units_constraint_nmin )
-        if (length(toofew) > 0) sppoly$dropflag[toofew] = TRUE
+      # final check
+      toofew = which( sppoly$npts < areal_units_constraint_nmin )
+      if (length(toofew) > 0) sppoly$already_dropped[toofew] = TRUE
 
-        sppoly = sppoly[ - which( sppoly$dropflag ), ]
-        sppoly$nok =NULL
-        message( "After merge, there are:  ", nrow(sppoly), " areal units." )
-    
+      sppoly = sppoly[ - which( sppoly$already_dropped ), ]
+      sppoly$count_is_ok =NULL
+      message( "After merge, there are:  ", nrow(sppoly), " areal units." )
+  
       sppoly = tessellate(st_coordinates(st_centroid(sppoly)), outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
       sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
 
     }
     
- browser()
       # update counts
     sppoly$internal_id = 1:nrow(sppoly)
     row.names( sppoly) = sppoly$internal_id
