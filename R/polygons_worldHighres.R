@@ -1,5 +1,5 @@
 
-polygons_worldHighres = function( regions="Canada", xlim=c(-70,-59), ylim=c(40, 50) ) {
+polygons_worldHighres = function( regions="Canada", xlim=c(-80,-40), ylim=c(38, 60) ) {
 
   require(mapdata)
   require(map)
