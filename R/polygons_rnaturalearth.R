@@ -20,7 +20,7 @@ polygons_rnaturalearth = function(  countries= c("united states of america", "ca
     if (is.null(countries)) {
       out = ne_countries(type = 'countries', returnclass="sf")
     } else {
-      out = ne_states( c("united states of america", "canada"), returnclass="sf" )
+      out = ne_states( countries, returnclass="sf" )
     }
 
     st_crs(out) = st_crs( "epsg:4326" )
