@@ -1,5 +1,5 @@
 
-polygons_rnaturalearth = function( ) {
+polygons_rnaturalearth = function(  countries= c("united states of america", "canada"), xlim=c(-70,-59), ylim=c(40, 50) ) {
 
   if (!require("rnaturalearth"))  install.packages("rnaturalearth")
   if (!require("rnaturalearthdata"))  install.packages("rnaturalearthdata")
@@ -12,10 +12,26 @@ polygons_rnaturalearth = function( ) {
             type = "source")
     }
 
-  require("rnaturalearth")
-  require("rnaturalearthhires")
-  require("rnaturalearthdata")
-  world = ne_countries(type = 'countries', scale = 'large', returnclass="sf")
+    require("rnaturalearth")
+    require("rnaturalearthhires")
+    require("rnaturalearthdata")
+    require(sf)
+    
+    if (is.null(countries)) {
+      out = ne_countries(type = 'countries', returnclass="sf")
+    } else {
+      out = ne_states( c("united states of america", "canada"), returnclass="sf" )
+    }
 
-  return(world)
+    st_crs(out) = st_crs( "epsg:4326" )
+    xy = as.matrix( expand.grid( xlim, ylim) )
+    mp = st_multipoint( xy )
+    mp = st_bbox (mp )
+    bbox =  st_as_sfc( st_bbox( mp ) )
+    st_crs(bbox) = st_crs( "epsg:4326" )
+    out = st_difference( bbox, out )
+
+  return(out)
 }
+
+
