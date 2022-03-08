@@ -31,7 +31,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
       st_geometry(groundfish_strata[40,]) = st_difference( st_geometry(groundfish_strata[40,]), st_geometry(groundfish_strata[38,]))
       groundfish_strata = st_make_valid(groundfish_strata)
 
-      attr(groundfish_strata, "region.id") = as.character( groundfish_strata[,"AUID"] )
+      attr(groundfish_strata, "space.id") = as.character( groundfish_strata[,"AUID"] )
 
       if (0) {
         plot(st_geometry( groundfish_strata) )
@@ -52,7 +52,7 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
 
       # i = which( ! st_is_valid(groundfish_strata) )
       groundfish_strata = st_make_valid(groundfish_strata)
-      attr(groundfish_strata, "region.id") = as.character( groundfish_strata[,"AUID"] )
+      attr(groundfish_strata, "space.id") = as.character( groundfish_strata[,"AUID"] )
 
       return( groundfish_strata)
     }
