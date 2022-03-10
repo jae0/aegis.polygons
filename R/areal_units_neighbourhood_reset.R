@@ -4,21 +4,21 @@ areal_units_neighbourhood_reset = function ( sppoly, snap=1 ) {
 
   require(spdep)
   
-  W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=snap )  # slow .. ~1hr?
-  W.remove = which(card(W.nb) == 0)
-  if ( length(W.remove) > 0 ) {
-    # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
-    W.keep = which(card(W.nb) > 0)
-    W.nb = nb_remove( W.nb, W.remove )
-    sppoly = sppoly[W.keep,]
+  NB_graph = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=snap )  # slow .. ~1hr?
+  NB_remove = which(card(NB_graph) == 0)
+  if ( length(NB_remove) > 0 ) {
+    # remove isolated locations and recreate sppoly .. alternatively add links to NB_graph
+    NB_keep = which(card(NB_graph) > 0)
+    NB_graph = nb_remove( NB_graph, NB_remove )
+    sppoly = sppoly[NB_keep,]
     row.names(sppoly) = sppoly$AUID
     sppoly = sppoly[order(sppoly$AUID),]
     sppoly = st_make_valid(sppoly)
   }
 
   attr(nb, "region.id") = sppoly$AUID
-  attr(sppoly, "nb") = INLA::inla.read.graph( spdep::nb2mat( W.nb ))  # adding neighbourhood as an attribute to sppoly
-  attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "nb") = INLA::inla.read.graph( spdep::nb2mat( NB_graph ))  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "NB_graph") = NB_graph  # adding neighbourhood as an attribute to sppoly
 
   return(sppoly)
 }

@@ -325,10 +325,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       sppoly$already_dropped = FALSE
       sppoly$count_is_ok = TRUE
       sppoly$count_is_ok[todrop] = FALSE
-      W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+      NB_graph = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
       for (i in order(sppoly$npts) ) {
         if ( sppoly$count_is_ok[i]) next()
-        lnb = W.nb[[ i ]]
+        lnb = NB_graph[[ i ]]
         if (length(lnb) < 1) next()
         local_finished = FALSE
         for (f in 1:length(lnb) ) {
@@ -438,14 +438,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   require(spdep)
   
-  W.nb = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
-  W.remove = which(card(W.nb) == 0)
+  NB_graph = poly2nb(sppoly, row.names=sppoly$AUID, queen=TRUE, snap=areal_units_resolution_km )  # slow .. ~1hr?
+  NB_remove = which(card(NB_graph) == 0)
 
-  if ( length(W.remove) > 0 ) {
-    # remove isolated locations and recreate sppoly .. alternatively add links to W.nb
-    W.keep = which(card(W.nb) > 0)
-    W.nb = nb_remove( W.nb, W.remove )
-    sppoly = sppoly[W.keep,]
+  if ( length(NB_remove) > 0 ) {
+    # remove isolated locations and recreate sppoly .. alternatively add links to NB_graph
+    NB_keep = which(card(NB_graph) > 0)
+    NB_graph = nb_remove( NB_graph, NB_remove )
+    sppoly = sppoly[NB_keep,]
     row.names(sppoly) = sppoly$AUID
     sppoly = sppoly[order(sppoly$AUID),]
     sppoly = st_make_valid(sppoly)
@@ -454,13 +454,13 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
 
   if (0) {
-    W.nb = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
-    plot(W.nb, st_geometry(sppoly))
-    edit.nb(W.nb, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
+    NB_graph = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  # slow .. ~1hr?
+    plot(NB_graph, st_geometry(sppoly))
+    edit.nb(NB_graph, polys=as(sppoly, "Spatial"), use_region.id=TRUE)
 
     # https://cran.r-project.org/web/packages/spdep/vignettes/nb_sf.html
      # sf::st_relate takes about 136 s. for a total of 139 s. to generate a queen neighbour object. The contiguity neighbour objects using st_queen
-    edit(W.nb, polys=sppoly, use_region.id=TRUE)
+    edit(NB_graph, polys=sppoly, use_region.id=TRUE)
   }
 
 
@@ -499,11 +499,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   if (!exists("strata_to_keep", sppoly) ) sppoly$strata_to_keep = TRUE  # flag for aggregations
 
-  nb = INLA::inla.read.graph( spdep::nb2mat( W.nb ))
+  nb = INLA::inla.read.graph( spdep::nb2mat( NB_graph ))
   attr(nb, "region.id") = sppoly$AUID
 
   attr(sppoly, "nb") = nb  # adding neighbourhood as an attribute to sppoly
-  attr(sppoly, "W.nb") = W.nb  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "NB_graph") = NB_graph  # adding neighbourhood as an attribute to sppoly
   attr(sppoly, "project_name") = project_name
   attr(sppoly, "spatial_domain") = spatial_domain
   attr(sppoly, "inputdata_spatial_discretization_planar_km") = inputdata_spatial_discretization_planar_km

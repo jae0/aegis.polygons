@@ -1,5 +1,5 @@
 
-maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre2014", shapefilelocation=NULL, returntype="polygons") {
+maritimes_groundfish_strata = function( NB_graph=NULL, areal_units_timeperiod="pre2014", shapefilelocation=NULL, returntype="polygons") {
   # create a sf SpatialPolygons of the groundfish strata used in Martimes Region of Canada
   require(maptools)
   require(rgdal)
@@ -60,49 +60,49 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
 
   if (returntype=="neighbourhoods") {
 
-    if (is.null(W.nb)) {
+    if (is.null(NB_graph)) {
       sppoly = maritimes_groundfish_strata( areal_units_timeperiod=areal_units_timeperiod, returntype="polygons" )
-      W.nb = spdep::poly2nb(sppoly, row.names=sppoly[,"AUID"], queen=TRUE )
+      NB_graph = spdep::poly2nb(sppoly, row.names=sppoly[,"AUID"], queen=TRUE )
     }
 
     if (areal_units_timeperiod=="pre2014") {
       if (0){
         # polygons seem malformed .. manually modify connectivity
-        isolated = which( card(W.nb) == 0)
+        isolated = which( card(NB_graph) == 0)
         plot(sppoly)
         plot(sppoly[isolated,], add=T, col="red")
         dev.new()
-        edit(W.nb, polys=as(sppoly, "Spatial"))
-        card(W.nb) # last check if any more  isolated areas
+        edit(NB_graph, polys=as(sppoly, "Spatial"))
+        card(NB_graph) # last check if any more  isolated areas
       }
 
       # these are the results from the above ..
       # hand craft connectivity  .. these should be looked at more carefully a bit ..
-      polyname = as.character( attr(W.nb, "region.id" ) )
+      polyname = as.character( attr(NB_graph, "region.id" ) )
 
-      W.nb = nb_add( W.nb, which(polyname=="5Z1"), which(polyname=="478"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z1"), which(polyname=="482"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z1"), which(polyname=="483"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z1"), which(polyname=="5Z8"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z2"), which(polyname=="5Z3"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z2"), which(polyname=="483"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z3"), which(polyname=="5Z5"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z3"), which(polyname=="483"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z4"), which(polyname=="5Z1"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z4"), which(polyname=="5Z2"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z4"), which(polyname=="5Z5"))
-      W.nb = nb_add( W.nb, which(polyname=="5Z4"), which(polyname=="5Z7"))
-      W.nb = nb_add( W.nb, which(polyname=="474"), which(polyname=="476"))
-      W.nb = nb_add( W.nb, which(polyname=="475"), which(polyname=="476"))
-      W.nb = nb_add( W.nb, which(polyname=="476"), which(polyname=="481"))
-      W.nb = nb_add( W.nb, which(polyname=="477"), which(polyname=="481"))
-      W.nb = nb_add( W.nb, which(polyname=="478"), which(polyname=="482"))
-      W.nb = nb_add( W.nb, which(polyname=="480"), which(polyname=="481"))
-      W.nb = nb_add( W.nb, which(polyname=="480"), which(polyname=="482"))
-      W.nb = nb_add( W.nb, which(polyname=="481"), which(polyname=="482"))
-      W.nb = nb_add( W.nb, which(polyname=="481"), which(polyname=="484"))
-      W.nb = nb_add( W.nb, which(polyname=="481"), which(polyname=="485"))
-      return( W.nb )
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z1"), which(polyname=="478"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z1"), which(polyname=="482"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z1"), which(polyname=="483"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z1"), which(polyname=="5Z8"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z2"), which(polyname=="5Z3"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z2"), which(polyname=="483"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z3"), which(polyname=="5Z5"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z3"), which(polyname=="483"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z4"), which(polyname=="5Z1"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z4"), which(polyname=="5Z2"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z4"), which(polyname=="5Z5"))
+      NB_graph = nb_add( NB_graph, which(polyname=="5Z4"), which(polyname=="5Z7"))
+      NB_graph = nb_add( NB_graph, which(polyname=="474"), which(polyname=="476"))
+      NB_graph = nb_add( NB_graph, which(polyname=="475"), which(polyname=="476"))
+      NB_graph = nb_add( NB_graph, which(polyname=="476"), which(polyname=="481"))
+      NB_graph = nb_add( NB_graph, which(polyname=="477"), which(polyname=="481"))
+      NB_graph = nb_add( NB_graph, which(polyname=="478"), which(polyname=="482"))
+      NB_graph = nb_add( NB_graph, which(polyname=="480"), which(polyname=="481"))
+      NB_graph = nb_add( NB_graph, which(polyname=="480"), which(polyname=="482"))
+      NB_graph = nb_add( NB_graph, which(polyname=="481"), which(polyname=="482"))
+      NB_graph = nb_add( NB_graph, which(polyname=="481"), which(polyname=="484"))
+      NB_graph = nb_add( NB_graph, which(polyname=="481"), which(polyname=="485"))
+      return( NB_graph )
     }
 
     if (areal_units_timeperiod=="post2014") {
@@ -110,10 +110,10 @@ maritimes_groundfish_strata = function( W.nb=NULL, areal_units_timeperiod="pre20
         # polys look ok
         plot(sppoly)
         dev.new()
-        edit(W.nb, polys=as(sppoly, "Spatial") )
-        card(W.nb) # last check if any more  isolated areas
+        edit(NB_graph, polys=as(sppoly, "Spatial") )
+        card(NB_graph) # last check if any more  isolated areas
       }
-      return( W.nb )
+      return( NB_graph )
     }
   }
 
