@@ -16,9 +16,9 @@ areal_units_neighbourhood_reset = function ( sppoly, snap=1 ) {
     sppoly = st_make_valid(sppoly)
   }
 
-  attr(nb, "region.id") = sppoly$AUID
-  attr(sppoly, "nb") = INLA::inla.read.graph( spdep::nb2mat( NB_graph ))  # adding neighbourhood as an attribute to sppoly
+  attr(NB_graph, "region.id") = sppoly$AUID
   attr(sppoly, "NB_graph") = NB_graph  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "nb") = INLA::inla.read.graph( spdep::nb2mat( NB_graph ))  # adding neighbourhood as an attribute to sppoly
 
   return(sppoly)
 }

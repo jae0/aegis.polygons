@@ -325,7 +325,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       sppoly$already_dropped = FALSE
       sppoly$count_is_ok = TRUE
       sppoly$count_is_ok[todrop] = FALSE
+
       NB_graph = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+      
       for (i in order(sppoly$npts) ) {
         if ( sppoly$count_is_ok[i]) next()
         lnb = NB_graph[[ i ]]
@@ -499,11 +501,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   if (!exists("strata_to_keep", sppoly) ) sppoly$strata_to_keep = TRUE  # flag for aggregations
 
-  nb = INLA::inla.read.graph( spdep::nb2mat( NB_graph ))
-  attr(nb, "region.id") = sppoly$AUID
+  attr(NB_graph, "region.id") = sppoly$AUID
 
-  attr(sppoly, "nb") = nb  # adding neighbourhood as an attribute to sppoly
   attr(sppoly, "NB_graph") = NB_graph  # adding neighbourhood as an attribute to sppoly
+  attr(sppoly, "nb") = INLA::inla.read.graph( spdep::nb2mat( NB_graph ))  # adding neighbourhood as an attribute to sppoly
+  
   attr(sppoly, "project_name") = project_name
   attr(sppoly, "spatial_domain") = spatial_domain
   attr(sppoly, "inputdata_spatial_discretization_planar_km") = inputdata_spatial_discretization_planar_km
