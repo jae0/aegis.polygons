@@ -296,8 +296,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     if (is.null(constraintdata)) constraintdata = xydata
     xydata = NULL
   
-    message("Merging adjacent AU's to target no of data points: ")
-
     # count
     sppoly$internal_id = 1:nrow(sppoly)
     row.names( sppoly) = sppoly$internal_id
@@ -316,7 +314,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         sppoly = sppoly[ -todrop , ]
       }
 
-    } else {
+    } else if (areal_units_type == "tesselation" ) {
 
       # try to join to adjacent au's
       todrop = which( sppoly$npts < areal_units_constraint_nmin )
