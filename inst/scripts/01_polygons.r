@@ -37,7 +37,9 @@ for ( areal_units_resolution_km in c(5, 10, 20, 25) ) {
 # Example
 
   # load helper functions
-  project.library( "aegis" )
+  project.library( "aegis", "aegis.polygons" )
+
+
   RLibrary( "rgdal", "sp", "raster", "maps", "mapdata")
 
   p = list() # start parameter list
@@ -63,7 +65,7 @@ for ( areal_units_resolution_km in c(5, 10, 20, 25) ) {
   # Access method 2: medium
   polygon_db ( DS="map.background", p=p )
   scotianshelf = polygon_db( polyid="test" )
-  lines( scotianshelf, col="orange" )
+  plot( scotianshelf, col="orange" )
 
   # Access method 3: one step .. just the data (projected or not)
   scotianshelf = polygon_db( polyid="test", project_to="+proj=utm +ellps=WGS84 +zone=20 +units=km" )

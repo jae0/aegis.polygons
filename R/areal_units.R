@@ -230,7 +230,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       )
     }
     if ( areal_units_type == "tesselation" ) {
-      message( "Determining areal units via iterative Voroni tesselation of AU centroids and dissolution of AUs")
+      message( "Determining areal units via iterative Voronoi tesselation of AU centroids and dissolution of AUs")
       sppoly = aegis_mesh(
         pts=xydata,
         boundary=boundary,
@@ -244,7 +244,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         nAU_min = p$nAU_min,   # stoppping criterion: allow no less than this number of areal units
         count_time = count_time,
         verbose = verbose
-      )  # voroni tesslation and delaunay triagulation
+      )  # Voronoi tesslation and delaunay triagulation
     }
 
   if (is.null(sppoly)) stop("Error in areal units: none found")
