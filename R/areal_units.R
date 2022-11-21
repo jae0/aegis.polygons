@@ -167,12 +167,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
       boundary = st_buffer(boundary, 5)  # expand distances a bit to include locs on boundary
-    
-      data_boundary = st_sfc( st_multipoint( non_convex_hull(
-        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-hull_noise, max=hull_noise ),  
-        alpha=hull_alpha
-        ) ), crs=st_crs(areal_units_proj4string_planar_km) 
-      )
+
+      xyd = non_convex_hull( xydata )
+      xyd = st_multipoint( st_coordinates(xyd))
+ 
+      data_boundary = st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
+ 
       data_boundary =  st_cast(data_boundary, "POLYGON" )
       data_boundary = st_make_valid(data_boundary)
       data_boundary = st_buffer(data_boundary, 5)
