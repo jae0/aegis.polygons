@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL,  spbuffer=5, hull_alpha =15, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL,  spbuffer=5, hull_alpha =15, hull_noise=1e-4, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
       count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
@@ -23,6 +23,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
   if (exists("hull_alpha", p)) hull_alpha = p$hull_alpha
+  if (exists("hull_noise", p)) hull_noise = p$hull_noise
 
   # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh"
   # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
@@ -168,7 +169,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_buffer(boundary, 5)  # expand distances a bit to include locs on boundary
     
       data_boundary = st_sfc( st_multipoint( non_convex_hull(
-        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ),  
+        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-hull_noise, max=hull_noise ),  
         alpha=hull_alpha
         ) ), crs=st_crs(areal_units_proj4string_planar_km) 
       )
@@ -180,15 +181,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   }  
   
   if (is.null(boundary)) {
-      message( "Determining areal unit domain boundary from input: xydata")
-      message( "If you get strange boundary outlines (due to data sparsity),")
-      message(" try changing (increasing) the value of hull_alpha, the granularity of boundary tracing, in km.")
-      message( "The current hull_alpha is: ", hull_alpha )
-      boundary = st_sfc( st_multipoint( non_convex_hull(
-        st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ) ,  # noise increases complexity of edges -> better discrim of polys
-        alpha=hull_alpha
-      ) ), crs=st_crs(areal_units_proj4string_planar_km) )
+      message( "Determining areal unit domain boundary from input: xydata") 
+      xyd = non_convex_hull( xydata )
+      xyd = st_multipoint( st_coordinates(xyd))
 
+      boundary = st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
+      
       boundary = (
         boundary
         %>% st_make_valid()
@@ -198,7 +196,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         %>% st_buffer(inputdata_spatial_discretization_planar_km )
         %>% st_make_valid()
       )
-
+ 
   }
   
     #  remove.coastline
@@ -224,16 +222,18 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     if ( areal_units_type == "inla_mesh" ) {
       message( "Determining areal units as an INLA mesh")
       sppoly = areal_units_inla_mesh(
-        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-1e-4, max=1e-4 ) , # add  noise  to prevent a race condition
+        locs=st_coordinates( xydata ) + runif( nrow(xydata)*2, min=-hull_noise, max=hull_noise ) , # add  noise  to prevent a race condition
         areal_units_resolution_km=areal_units_resolution_km,
         areal_units_proj4string_planar_km=areal_units_proj4string_planar_km
       )
     }
+    
     if ( areal_units_type == "tesselation" ) {
       message( "Determining areal units via iterative Voronoi tesselation of AU centroids and dissolution of AUs")
       sppoly = aegis_mesh(
         pts=xydata,
         boundary=boundary,
+        output_type="polygons",
         resolution=areal_units_resolution_km,
         spbuffer=areal_units_resolution_km,
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
