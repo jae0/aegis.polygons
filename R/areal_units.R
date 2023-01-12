@@ -15,6 +15,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     xydata=NULL
     duplications_action="union"
     areal_units_timeperiod=NULL
+    areal_units_fn_full = NULL
+    areal_units_directory=NULL
     verbose=TRUE
   }
 
@@ -182,7 +184,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata )
+      xyd = non_convex_hull( xydata, alpha=hull_alpha )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       boundary = st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
