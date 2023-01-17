@@ -169,18 +169,20 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary =  st_simplify(boundary, TRUE, 1 )
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
-
-
+ 
       xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=ifelse( exists("pres", p), p$pres, NA ) )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
-      data_boundary = st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
       data_boundary = (
-        data_boundary
+        st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
         %>% st_make_valid()
         %>% st_simplify()
-        %>% st_cast("MULTIPOLYGON" )
         %>% st_union()
+        %>% st_cast("POLYGON" )
+        %>% st_simplify()
+        %>% st_buffer(inputdata_spatial_discretization_planar_km * 5 )
+        %>% st_union()
+        %>% st_cast("POLYGON" )
         %>% st_make_valid()
       )
    
