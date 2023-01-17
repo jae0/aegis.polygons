@@ -180,7 +180,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         %>% st_union()
         %>% st_cast("POLYGON" )
         %>% st_simplify()
-        %>% st_buffer(inputdata_spatial_discretization_planar_km * 5 )
+        %>% st_buffer(inputdata_spatial_discretization_planar_km * 10 )
         %>% st_union()
         %>% st_cast("POLYGON" )
         %>% st_make_valid()
