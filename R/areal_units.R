@@ -161,23 +161,29 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   } 
     
   if ( project_name == "bio.snowcrab") {
-    
+  
       message( "Determining areal unit domain boundary from snowcrab survey")
       boundary = polygon_managementareas( species="snowcrab" )
       boundary = st_transform( boundary, st_crs(areal_units_proj4string_planar_km) )
       boundary = st_buffer(boundary, 0)  
+      boundary =  st_simplify(boundary, TRUE, 1 )
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
-      boundary = st_buffer(boundary, 5)  # expand distances a bit to include locs on boundary
+
 
       xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=ifelse( exists("pres", p), p$pres, NA ) )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
- 
+
       data_boundary = st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
- 
-      data_boundary =  st_cast(data_boundary, "POLYGON" )
-      data_boundary = st_make_valid(data_boundary)
-      data_boundary = st_buffer(data_boundary, 5)
+      data_boundary = (
+        data_boundary
+        %>% st_make_valid()
+        %>% st_simplify()
+        %>% st_cast("MULTIPOLYGON" )
+        %>% st_union()
+        %>% st_make_valid()
+      )
+   
       boundary = st_intersection(data_boundary, boundary)
   
   }  
