@@ -170,7 +170,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=ifelse( exists("pres", p), p$pres, NA ) )
+      xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=spbuffer )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
@@ -189,26 +189,24 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_intersection(data_boundary, boundary)
   
   }  
+ 
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=ifelse( exists("pres", p), p$pres, NA ) )
+      xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=spbuffer/2 )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
-
-      boundary = st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
-      
       boundary = (
-        boundary
-        %>% st_make_valid()
-        %>% st_simplify()
-        %>% st_union()
+        st_zm(xyd)
+        %>% st_concave_hull(ratio=0.01)
+        %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
+        %>% st_buffer(1)
         %>% st_cast("POLYGON" )
-        %>% st_buffer(inputdata_spatial_discretization_planar_km )
+        %>% st_simplify(dTolerance=1)
+        %>% st_union()
         %>% st_make_valid()
       )
  
   }
-  
     #  remove.coastline
     require(aegis.coastline)
     coast = (
@@ -217,6 +215,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         %>% st_simplify()
         %>% st_buffer(inputdata_spatial_discretization_planar_km )
         %>% st_union()
+        %>% st_cast("MULTIPOLYGON")
     )
 
     boundary = st_difference( boundary, coast)
