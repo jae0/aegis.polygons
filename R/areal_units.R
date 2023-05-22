@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL,  spbuffer=5, hull_alpha =15, hull_noise=1e-4, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, hull_ratio=0.05, hull_alpha =15, hull_noise=1e-4, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
       count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
@@ -195,9 +195,10 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       message( "Determining areal unit domain boundary from input: xydata") 
       xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=spbuffer/2 )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
+
       boundary = (
         st_zm(xyd)
-        %>% st_concave_hull(ratio=0.01)
+        %>% st_concave_hull(ratio=hull_ratio)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_buffer(1)
         %>% st_cast("POLYGON" )
