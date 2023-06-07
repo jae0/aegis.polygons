@@ -174,18 +174,16 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
-        st_sfc( st_zm(xyd) , crs=st_crs(areal_units_proj4string_planar_km) )
-        %>% st_make_valid()
-        %>% st_simplify()
-        %>% st_union()
+        st_zm(xyd)
+        %>% st_concave_hull(ratio=hull_ratio)
+        %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
+        %>% st_buffer(inputdata_spatial_discretization_planar_km)
         %>% st_cast("POLYGON" )
-        %>% st_simplify()
-        %>% st_buffer(inputdata_spatial_discretization_planar_km * 10 )
+        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km )
         %>% st_union()
-        %>% st_cast("POLYGON" )
         %>% st_make_valid()
       )
-   
+ 
       boundary = st_intersection(data_boundary, boundary)
   
   }  
@@ -200,7 +198,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         st_zm(xyd)
         %>% st_concave_hull(ratio=hull_ratio)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
-        %>% st_buffer(1)
+        %>% st_buffer(inputdata_spatial_discretization_planar_km)
         %>% st_cast("POLYGON" )
         %>% st_simplify(dTolerance=1)
         %>% st_union()
@@ -367,31 +365,50 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
           }
         }
       }
-
       # final check
       toofew = which( sppoly$npts < areal_units_constraint_nmin )
       if (length(toofew) > 0) sppoly$already_dropped[toofew] = TRUE
-
       sppoly = sppoly[ - which( sppoly$already_dropped ), ]
       sppoly$count_is_ok =NULL
       message( "After merge, there are:  ", nrow(sppoly), " areal units." )
-  
-      sppoly = tessellate(st_coordinates(st_centroid(sppoly))[,c("X", "Y")], outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
-      sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
-
     }
-    
-      # update counts
+        
+    message( "Dropping low count locations and merging." )
+    # update counts: iterativ, so do it a few times
+    for (i in 1:5) {
+
+      uu = jitter( st_coordinates(st_centroid(sppoly))[,c("X", "Y")] )  # jitter noise to keep from getting stuck
+      sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
+      sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
+ 
+      sppoly$internal_id = 1:nrow(sppoly)
+      row.names( sppoly) = sppoly$internal_id
+      cdd = setDT( st_drop_geometry( constraintdata ) )
+      cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
+      cdd = cdd[,.(npts=.N), .(internal_id) ]
+      sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
+      sppoly = st_make_valid(sppoly)
+
+      # drop 
+      o =  which( !is.finite(sppoly$npts ) | sppoly$npts < areal_units_constraint_nmin )
+      if (length(o)==0) break()
+
+      sppoly = sppoly[ -o, ]
+
+    } 
+    # final update
+    sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
+    sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
+   
     sppoly$internal_id = 1:nrow(sppoly)
     row.names( sppoly) = sppoly$internal_id
     cdd = setDT( st_drop_geometry( constraintdata ) )
     cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
     cdd = cdd[,.(npts=.N), .(internal_id) ]
     sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
-      
     sppoly$internal_id = NULL
     sppoly = st_make_valid(sppoly)
-
+ 
     message( "Applying additional constraints leaves: ",  nrow(sppoly), " areal units." )
 
     if ( nrow( sppoly) == 0 ) {
