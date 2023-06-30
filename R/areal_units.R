@@ -170,7 +170,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=spbuffer/2  )
+      xyd = non_convex_hull( xydata, dres=spbuffer/2 )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
@@ -191,7 +191,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, alpha=hull_alpha, dres=spbuffer/2 )
+      xyd = non_convex_hull( xydata, dres=spbuffer/2 )
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       boundary = (
@@ -238,6 +238,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     
     if ( areal_units_type == "tesselation" ) {
       message( "Determining areal units via iterative Voronoi tesselation of AU centroids and dissolution of AUs")
+      # boundary precomputed specific to project here if possible to give more control
+
       sppoly = aegis_mesh(
         pts=xydata,
         boundary=boundary,
@@ -375,7 +377,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         
     message( "Dropping low count locations and merging." )
     # update counts: iterativ, so do it a few times
-    for (i in 1:5) {
+    for (i in 1:3) {
 
       uu = jitter( st_coordinates(st_centroid(sppoly))[,c("X", "Y")] )  # jitter noise to keep from getting stuck
       sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
