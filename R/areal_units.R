@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=3, hull_ratio=0.1, hull_noise=1e-4, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=3,  hull_noise=1e-4, 
   duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
   count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
@@ -26,7 +26,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   # hull (boundary) related:
   if (exists("spbuffer", p)) spbuffer = p$spbuffer
-  if (exists("hull_ratio", p)) hull_ratio = p$hull_ratio
   if (exists("hull_noise", p)) hull_noise = p$hull_noise
   if (exists("n_iter_drop", p)) n_iter_drop = p$n_iter_drop
 
@@ -173,14 +172,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata,lengthscale=inputdata_spatial_discretization_planar_km )  # default method uses lengthscale as raster basis 
+      xyd = non_convex_hull( xydata, lengthscale=inputdata_spatial_discretization_planar_km )  # default method uses lengthscale as raster basis 
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
         st_zm(xyd)
-        %>% st_concave_hull(ratio=hull_ratio)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
-        %>% st_buffer(inputdata_spatial_discretization_planar_km)
         %>% st_cast("POLYGON" )
         %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km )
         %>% st_union()
@@ -199,11 +196,9 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
       boundary = (
         st_zm(xyd)
-        %>% st_concave_hull(ratio=hull_ratio)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
-        %>% st_buffer(inputdata_spatial_discretization_planar_km)
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=1)
+        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
         %>% st_union()
         %>% st_make_valid()
       )
@@ -249,7 +244,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         output_type="polygons",
         resolution=areal_units_resolution_km,
         spbuffer=areal_units_resolution_km,
-        hull_ratio=hull_ratio,
+        hull_lengthscale=areal_units_resolution_km,  # for rasterization
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         areal_units_constraint_nmin=areal_units_constraint_nmin,
         tus=p$tus,
@@ -402,7 +397,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       sppoly = sppoly[ -o, ]
 
     } 
-    # final update
+    # final update      
+    uu = jitter( st_coordinates(st_centroid(sppoly))[,c("X", "Y")] )  # jitter noise to keep from getting stuck
     sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
     sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
    
