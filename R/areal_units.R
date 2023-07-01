@@ -1,8 +1,9 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, hull_ratio=0.05, hull_alpha =15, hull_noise=1e-4, duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
-      count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=3, hull_ratio=0.1, hull_noise=1e-4, 
+  duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
+  count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
   if (0) {
     plotit=FALSE
@@ -10,7 +11,6 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     redo=FALSE
     use_stmv_solution=TRUE
     spbuffer=5
-    hull_alpha = 15
     rastermethod="sf"
     xydata=NULL
     duplications_action="union"
@@ -24,8 +24,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
-  if (exists("hull_alpha", p)) hull_alpha = p$hull_alpha
+  # hull (boundary) related:
+  if (exists("spbuffer", p)) spbuffer = p$spbuffer
+  if (exists("hull_ratio", p)) hull_ratio = p$hull_ratio
   if (exists("hull_noise", p)) hull_noise = p$hull_noise
+  if (exists("n_iter_drop", p)) n_iter_drop = p$n_iter_drop
 
   # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh"
   # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
@@ -170,7 +173,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, dres=spbuffer/2 )
+      xyd = non_convex_hull( xydata,lengthscale=inputdata_spatial_discretization_planar_km )  # default method uses lengthscale as raster basis 
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
@@ -191,7 +194,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, dres=spbuffer/2 )
+      xyd = non_convex_hull( xydata, lengthscale=inputdata_spatial_discretization_planar_km )  # default method uses lengthscale as raster basis 
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       boundary = (
@@ -246,6 +249,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         output_type="polygons",
         resolution=areal_units_resolution_km,
         spbuffer=areal_units_resolution_km,
+        hull_ratio=hull_ratio,
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         areal_units_constraint_nmin=areal_units_constraint_nmin,
         tus=p$tus,
@@ -377,7 +381,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         
     message( "Dropping low count locations and merging." )
     # update counts: iterativ, so do it a few times
-    for (i in 1:3) {
+    for (i in 1:n_iter_drop) {
 
       uu = jitter( st_coordinates(st_centroid(sppoly))[,c("X", "Y")] )  # jitter noise to keep from getting stuck
       sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
