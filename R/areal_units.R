@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=3,  hull_noise=1e-4, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=1,  hull_noise=1e-4, 
   duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
   count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
@@ -172,14 +172,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, lengthscale=inputdata_spatial_discretization_planar_km )  # default method uses lengthscale as raster basis 
+      xyd = non_convex_hull( xydata, lengthscale=spbuffer/2 )  
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
         st_zm(xyd)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km )
+        %>% st_simplify(dTolerance=spbuffer/2 )
         %>% st_union()
         %>% st_make_valid()
       )
@@ -191,14 +191,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, lengthscale=inputdata_spatial_discretization_planar_km )  # default method uses lengthscale as raster basis 
+      xyd = non_convex_hull( xydata, lengthscale=spbuffer/2  )  
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       boundary = (
         st_zm(xyd)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
+        %>% st_simplify(dTolerance=spbuffer/2)
         %>% st_union()
         %>% st_make_valid()
       )
