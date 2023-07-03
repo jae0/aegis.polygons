@@ -172,14 +172,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, lengthscale=spbuffer/2 )  
+      xyd = non_convex_hull( xydata, lengthscale=spbuffer )  
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
         st_zm(xyd)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=spbuffer/2 )
+        %>% st_simplify(dTolerance=spbuffer )
         %>% st_union()
         %>% st_make_valid()
       )
@@ -191,14 +191,14 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, lengthscale=spbuffer/2  )  
+      xyd = non_convex_hull( xydata, lengthscale=spbuffer  )  
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       boundary = (
         st_zm(xyd)
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=spbuffer/2)
+        %>% st_simplify(dTolerance=spbuffer)
         %>% st_union()
         %>% st_make_valid()
       )
@@ -243,8 +243,8 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         boundary=boundary,
         output_type="polygons",
         resolution=areal_units_resolution_km,
-        spbuffer=areal_units_resolution_km,
-        hull_lengthscale=areal_units_resolution_km,  # for rasterization
+        spbuffer=spbuffer,
+        hull_lengthscale=spbuffer,  # for rasterization .. not used if boundary is provided
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         areal_units_constraint_nmin=areal_units_constraint_nmin,
         tus=p$tus,
@@ -255,6 +255,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
         verbose = verbose
       )  # Voronoi tesslation and delaunay triagulation
     }
+
 
   if (is.null(sppoly)) stop("Error in areal units: none found")
 
@@ -398,7 +399,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
     } 
     # final update      
-    uu = jitter( st_coordinates(st_centroid(sppoly))[,c("X", "Y")] )  # jitter noise to keep from getting stuck
+    uu =  st_coordinates(st_centroid(sppoly))[,c("X", "Y")] 
     sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
     sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
    
