@@ -2,11 +2,11 @@
 
 This R-library serves three functions:
 
-- A front end to save/load polygons stored as Rdata or RDS files. 
+- A front end to save/load polygons stored as Rdata or RDS files with labels conforming to aegis.* expectations. 
 
 - To create polygons (areal units) for use in areal-unit modelling
     
-    - using tesselation of Voronoi triangles (see carstm examples in their own projects)
+    - using tesselation of Voronoi triangles (see [carstm examples](https://github.com/jae0/carstm/))
 
     - using simple lattice structure defined by "areal_units_resolution_km" (see below)
 
