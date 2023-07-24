@@ -1,9 +1,11 @@
 
 maritimes_groundfish_strata = function( NB_graph=NULL, areal_units_timeperiod="pre2014", shapefilelocation=NULL, returntype="polygons") {
   # create a sf SpatialPolygons of the groundfish strata used in Martimes Region of Canada
-  require(maptools)
-  require(rgdal)
-  require(sf)
+
+  # deprecated libs:
+  # require(maptools)
+  # require(rgdal)
+  # require(sf)
 
   # if (is.null(shapefilelocation)) shapefilelocation=system.file("data", package="carstm", mustWork=TRUE)
   if (is.null(shapefilelocation)) shapefilelocation=project.datadirectory("aegis", "polygons", "Management_Areas", "Fisheries", "Groundfish")

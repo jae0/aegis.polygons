@@ -32,7 +32,7 @@ polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
 
   if (DS=="create") {
     print( "Left mouse click and then to end right-mouse click (or [Esc] in Windows ) " )
-    polygon_db ( DS="map.background", p=p )
+    # polygon_db ( DS="map.background", p=p )
     X = locator(type="o" )
     X = as.data.frame( X)
     colnames(X) = c("lon", "lat")
@@ -45,7 +45,7 @@ polygon_db = function( DS="load", p=NULL, polyid=NULL, project_to=projection_pro
       u = readline( "Filename (above) exists. Interrupt now otherwise it will be overwritten" )
     }
     write.table( X, file=save.filename )
-    return ("save completed")
+    return (X)
   }
 
 }
