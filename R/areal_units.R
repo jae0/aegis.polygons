@@ -1,7 +1,7 @@
 
 
 areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=NULL, plotit=FALSE, sa_threshold_km2=0, redo=FALSE,
-  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=1,  hull_noise=1e-4, 
+  use_stmv_solution=TRUE, rastermethod="sf",  xydata=NULL, spbuffer=5, n_iter_drop=1, hull_noise=1e-4, lenprob=0.9,
   duplications_action="union",  areal_units_timeperiod=NULL, verbose=FALSE, return_crs=NULL, 
   count_time=TRUE, respect_spatial_domain=TRUE, ... ) {
 
@@ -13,6 +13,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     spbuffer=5
     rastermethod="sf"
     xydata=NULL
+    lenprob = 0.9
     duplications_action="union"
     areal_units_timeperiod=NULL
     areal_units_fn_full = NULL
@@ -172,7 +173,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, lengthscale=spbuffer )  
+      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       data_boundary = (
@@ -191,7 +192,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, lengthscale=spbuffer  )  
+      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
       xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
 
       boundary = (
@@ -335,6 +336,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       sppoly$count_is_ok[todrop] = FALSE
 
       NB_graph = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
+      message( "Joinging adjacent areal units to obtain target minimum number of data points in a cell: ", areal_units_constraint_nmin )
       
       for (i in order(sppoly$npts) ) {
         if ( sppoly$count_is_ok[i]) next()
@@ -375,7 +377,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       message( "After merge, there are:  ", nrow(sppoly), " areal units." )
     }
         
-    message( "Dropping low count locations and merging." )
+    message( "Last pass: Force dropping of low count locations:" )
     # update counts: iterativ, so do it a few times
     for (i in 1:n_iter_drop) {
 
@@ -398,8 +400,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       sppoly = sppoly[ -o, ]
 
     } 
+
     # final update      
+
     uu =  st_coordinates(st_centroid(sppoly))[,c("X", "Y")] 
+
     sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
     sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
    
