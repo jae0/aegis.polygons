@@ -336,7 +336,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       sppoly$count_is_ok[todrop] = FALSE
 
       NB_graph = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE)  
-      message( "Joinging adjacent areal units to obtain target minimum number of data points in a cell: ", areal_units_constraint_nmin )
+      message( "Joining adjacent areal units to obtain target minimum number of data points in a cell: ", areal_units_constraint_nmin )
       
       for (i in order(sppoly$npts) ) {
         if ( sppoly$count_is_ok[i]) next()
