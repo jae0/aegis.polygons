@@ -46,7 +46,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   areal_units_timeperiod =  ifelse (exists("areal_units_timeperiod", p), p$areal_units_timeperiod, "none" )
   
   areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)
-  areal_units_constraint_ntarget =  ifelse (exists("areal_units_constraint_ntarget", p), p$areal_units_constraint_ntarget, 0)
+  areal_units_constraint_ntarget =  ifelse (exists("areal_units_constraint_ntarget", p), round(p$areal_units_constraint_ntarget), 0)
 
 
   areal_units_fn = paste(
