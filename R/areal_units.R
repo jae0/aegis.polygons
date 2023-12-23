@@ -27,9 +27,16 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   # hull (boundary) related:
   if (exists("spbuffer", p)) spbuffer = p$spbuffer
+  if (exists("lenprob", p)) lenprob = p$lenprob
   if (exists("hull_noise", p)) hull_noise = p$hull_noise
   if (exists("n_iter_drop", p)) n_iter_drop = p$n_iter_drop
+  if (exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
 
+  if (exists("rastermethod", p)) rastermethod = p$rastermethod
+  if (exists("use_stmv_solution", p)) use_stmv_solution = p$use_stmv_solution
+  if (exists("areal_units_directory", p)) areal_units_directory = p$areal_units_directory
+  if (exists("areal_units_fn_full", p)) areal_units_fn_full = p$areal_units_fn_full
+  
   # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh"
   # areal_units_overlay: "groundfish_strata", "snowcrab_managementareas", "none"
 
