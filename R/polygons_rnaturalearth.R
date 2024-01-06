@@ -1,5 +1,5 @@
 
-polygons_rnaturalearth = function(  countries= c("united states of america", "canada"), xlim=c(-80,-40), ylim=c(38, 60) ) {
+polygons_rnaturalearth = function(  countries= c("United States of America", "Canada"), xlim=c(-80,-40), ylim=c(38, 60) ) {
 
   if (!require("rnaturalearth"))  install.packages("rnaturalearth")
   if (!require("rnaturalearthdata"))  install.packages("rnaturalearthdata")
