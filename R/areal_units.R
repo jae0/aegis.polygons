@@ -55,18 +55,16 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   areal_units_constraint_nmin =  ifelse (exists("areal_units_constraint_nmin", p), p$areal_units_constraint_nmin, 0)
   areal_units_constraint_ntarget =  ifelse (exists("areal_units_constraint_ntarget", p), round(p$areal_units_constraint_ntarget), 0)
 
-
-  areal_units_fn = paste(
-    spatial_domain,
-    areal_units_type,
-    areal_units_resolution_km,
-    areal_units_constraint,
-    areal_units_constraint_ntarget,
-    areal_units_constraint_nmin,
-    areal_units_timeperiod,
-    paste0(areal_units_overlay, collapse="~"),
-    sep="~"
-  )
+  areal_units_fn = areal_units_filename(
+    spatial_domain = spatial_domain,
+    areal_units_type = areal_units_type,
+    areal_units_resolution_km = areal_units_resolution_km,
+    areal_units_constraint = areal_units_constraint,
+    areal_units_constraint_ntarget = areal_units_constraint_ntarget,
+    areal_units_constraint_nmin = areal_units_constraint_nmin,
+    areal_units_timeperiod = areal_units_timeperiod,
+    areal_units_overlay = areal_units_overlay )
+    
 
   if ( !is.null(areal_units_fn_full) ) areal_units_directory =  dirname(areal_units_fn_full)
 
