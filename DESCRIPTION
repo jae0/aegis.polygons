@@ -1,10 +1,10 @@
 Package: aegis.polygons
-Title: Polygon methods
-Version: 2021.1
+Title: Polygon methods for aegis
+Version: 2024.7
 Authors@R: c( person("Jae", "Choi", email="choijaeseok@gmail.com", role=c("aut", "cre")) )
 Description: This project provides tools to bootstrap a system to permit operation of aegis tools and data. Required are the definition of a few global variables: code_root, work_root, data_root. See the README for more details.
-Depends: R (>= 3.0.0), data.table
-Suggests: aegis, sp, sf
+Depends: R (>= 3.0.0), data.table, sf
+Suggests: aegis
 License: MIT
 LazyData: true
 URL: https://github.com/jae0/aegis.polygons/
