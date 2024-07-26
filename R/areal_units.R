@@ -87,6 +87,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     }
   }
 
+  message("***\n
+      If any new parameter settings are used for sppoly creation, \n
+      then move them into *_parameters.R as the lookup mechanism \n 
+      uses these parameter settings for file lookup \n***\n")
+
   message( "Creating areal units: ", areal_units_fn_full)
 
   message( "Areal units base structure (type): ", areal_units_type)
