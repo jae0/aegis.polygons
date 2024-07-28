@@ -267,7 +267,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
       )  # Voronoi tesslation and delaunay triagulation
     }
 
-
+s
   if (is.null(sppoly)) stop("Error in areal units: none found")
 
   if (!is.null(boundary)) {
