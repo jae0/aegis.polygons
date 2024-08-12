@@ -34,7 +34,12 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   if (exists("rastermethod", p)) rastermethod = p$rastermethod
   if (exists("use_stmv_solution", p)) use_stmv_solution = p$use_stmv_solution
-  if (exists("areal_units_directory", p)) areal_units_directory = p$areal_units_directory
+  if (exists("areal_units_directory", p)) {
+    if (is.null(areal_units_directory)) {
+      areal_units_directory = p$areal_units_directory  # priority to arg passed to this functions
+    }
+  }
+  
   if (exists("areal_units_fn_full", p)) areal_units_fn_full = p$areal_units_fn_full
   
   # areal_units_type:  "tesselation", "lattice", "stratanal_polygons", "groundfish_strata",  "inla_mesh"
@@ -66,7 +71,11 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
     areal_units_overlay = areal_units_overlay )
     
 
-  if ( !is.null(areal_units_fn_full) ) areal_units_directory =  dirname(areal_units_fn_full)
+  if ( !is.null(areal_units_fn_full) ) {
+    if (is.null(areal_units_directory)) {
+      areal_units_directory =  dirname(areal_units_fn_full)
+    }
+  }
 
   if ( is.null(areal_units_fn_full) )  {
     if ( is.null(areal_units_directory) )  areal_units_directory = file.path( p$datadir, "areal_units" )
