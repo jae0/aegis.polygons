@@ -5,23 +5,23 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
   if (DS == "maritimes") {
     outdir = file.path(  )
     fn = file.path( polydir, "Science", "Management_Areas", "Fisheries",
-      paste( "maritimes_boundary", "rdata", sep="." ) )
+      paste( "maritimes_boundary", "rdz", sep="." ) )
   }
 
   if (DS == "snowcrab" ) {
     fn = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Snowcrab",
-      paste( "maritimes_snowcrab_boundary", "rdata", sep="." ) )
+      paste( "maritimes_snowcrab_boundary", "rdz", sep="." ) )
   }
 
   if (DS=="groundfish") {
     fn = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Groundfish",
-    paste( "maritimes_groundfish_boundary", "rdata", sep="." ) )
+    paste( "maritimes_groundfish_boundary", "rdz", sep="." ) )
   }
 
   boundary = NULL
   if (!redo) {
     if (file.exists(fn)) {
-      load(fn)
+      boundary = read_write_fast(fn)
       return(boundary)
     }
   }
@@ -63,6 +63,6 @@ maritimes_fishery_boundary = function( DS="maritimes", areal_units_timeperiod="p
   )
 
   if (!file.exists( dirname(fn) )) dir.create( dirname(fn), recursive=TRUE, showWarnings=FALSE )
-  save( boundary, file=fn, compress=TRUE )
+  read_write_fast( boundary, file=fn )
   return( boundary)
 }

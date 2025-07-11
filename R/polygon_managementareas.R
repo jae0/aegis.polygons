@@ -5,12 +5,12 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
     polydir = project.datadirectory("aegis", "polygons")
     outdir = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Snowcrab" )
     if (!file.exists( outdir )) dir.create( outdir, recursive=TRUE, showWarnings=FALSE )
-    fn = file.path( outdir, paste( area, "rdata", sep="." ) )
+    fn = file.path( outdir, paste( area, "rdz", sep="." ) )
 
     shp = NULL
 
     if (!redo) {
-      if (file.exists(fn)) load(fn)
+      if (file.exists(fn)) shp = read_write_fast(fn)
       if( !is.null(shp) ) {
         return(shp)
       }
@@ -36,7 +36,7 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
 
     shp = st_transform( shp, st_crs(project_to) )
 
-    save(shp, file=fn, compress=TRUE)
+    read_write_fast(shp, file=fn)
     return(shp)
 
     plot(shp)
@@ -47,12 +47,12 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
     polydir = project.datadirectory("aegis", "polygons")
     outdir = file.path( polydir, "Science", "Management_Areas", "Fisheries", "Snowcrab" )
     if (!file.exists( outdir )) dir.create( outdir, recursive=TRUE, showWarnings=FALSE )
-    fn = file.path( outdir, paste( "snowcrab", "rdata", sep="." ) )
+    fn = file.path( outdir, paste( "snowcrab", "rdz", sep="." ) )
 
     shp = NULL
 
     if (!redo) {
-      if (file.exists(fn)) load(fn)
+      if (file.exists(fn)) shp = read_write_fast(fn)
       if( !is.null(shp) ) {
         return(shp)
       }
@@ -93,7 +93,7 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
 
     shp = st_transform( shp, st_crs(project_to) )
 
-    save(shp, file=fn, compress=TRUE)
+    read_write_fast(shp, file=fn)
     return(shp)
 
     plot(shp)

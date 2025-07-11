@@ -79,7 +79,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   if ( is.null(areal_units_fn_full) )  {
     if ( is.null(areal_units_directory) )  areal_units_directory = file.path( p$datadir, "areal_units" )
-    areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdata", sep="." ) )
+    areal_units_fn_full = file.path( areal_units_directory, paste(areal_units_fn, "rdz", sep="." ) )
   }
 
   dir.create( areal_units_directory, showWarnings = FALSE, recursive = TRUE )
@@ -88,7 +88,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
 
   if (!redo) {
     if ( file.exists(areal_units_fn_full) ) {
-      load(areal_units_fn_full)
+      sppoly = read_write_fast(areal_units_fn_full)
       if (!is.null(sppoly)) {
         if ( !is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
         if ( !is.null( sppoly ) ) return(sppoly)
@@ -571,7 +571,7 @@ areal_units = function( p=NULL, areal_units_fn_full=NULL, areal_units_directory=
   attr(sppoly, "areal_units_constraint_nmin") = areal_units_constraint_nmin
 
   if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
-  save(sppoly, file=areal_units_fn_full, compress=TRUE)
+  read_write_fast(sppoly, file=areal_units_fn_full)
   message( "Saved polygons as: ", areal_units_fn_full )
 
   if (plotit) plot(sppoly["au_sa_km2"])

@@ -27,9 +27,9 @@ polygon_5kmoffcoast = function( plotdata=FALSE ) {
   # This box will be used to select coastline part of interest.
   # bb = locator( type="o")  # bounding box manually determined
 
-  fnbb = file.path( pddata, "boundingbox.coastline.ns.rdata" )
-  # save( bb, file=fnbb)
-  load( fnbb)
+  fnbb = file.path( pddata, "boundingbox.coastline.ns.rdz" )
+  # read_write_fast( bb, file=fnbb)
+  bb = read_write_fast( fnbb)
 
   # Convert to data frame
   aoi = data.frame( cbind( x=bb$x, y=bb$y))
@@ -46,9 +46,9 @@ polygon_5kmoffcoast = function( plotdata=FALSE ) {
   # no need to repeat.The points of the box are in bborder and saved in fnborder.
   # bborder = locator( type="o")  # bounding box manually determined
 
-  fnborder = file.path( pddata, "boundingbox.can_us_border.rdata" )
-  # save( bborder, file=fnborder)
-  load( fnborder)
+  fnborder = file.path( pddata, "boundingbox.can_us_border.rdz" )
+  # read_write_fast( bborder, file=fnborder)
+  bborder = read_write_fast( fnborder)
 
   # Convert to data frame
   bborder = as.data.frame( bborder )
@@ -65,9 +65,9 @@ polygon_5kmoffcoast = function( plotdata=FALSE ) {
   # Remove Cape Cod, the same way
   # bcapecod = locator( type="o")  # bounding box manually determined
 
-  fnbcapecod = file.path( pddata, "boundingbox.bcapecod.rdata" )
-  # save( bcapecod, file=fnbcapecod)
-  load( fnbcapecod)
+  fnbcapecod = file.path( pddata, "boundingbox.bcapecod.rdz" )
+  # read_write_fast( bcapecod, file=fnbcapecod)
+  bcapecod = read_write_fast( fnbcapecod)
 
   bcapecod = as.data.frame( bcapecod )
   bcapecod = rbind(bcapecod, bcapecod[1,])
@@ -111,9 +111,9 @@ polygon_5kmoffcoast = function( plotdata=FALSE ) {
   coast5km = inla.nonconvex.hull( out, convex=5, resolution=500 )
 
   # output is a list. save
-  fn5km= file.path( pddata, "coast5km.all.polygons.list.rdata" )
-  save( coast5km, file=fn5km)
-  load(fn5km)
+  fn5km= file.path( pddata, "coast5km.all.polygons.list.rdz" )
+  read_write_fast( coast5km, file=fn5km)
+  coast5km = read_write_fast(fn5km)
 
   # extract x and y from the list and define flag for flagging polygons
   x=coast5km$loc[,1]
@@ -186,10 +186,10 @@ polygon_5kmoffcoast = function( plotdata=FALSE ) {
 
 
   # save polygons 5km from coastline in lat and lon
-  fn2= file.path( pddata, "coast5km.polygons.4filtering.rdata" )
+  fn2= file.path( pddata, "coast5km.polygons.4filtering.rdz" )
   fn3= file.path( pddata, "coast5km.polygons.4filtering.csv" )
 
-  save(c5kf, file=fn2)
+  read_write_fast(c5kf, file=fn2)
   # write.table( c5kf, file=fn3 )
 
 

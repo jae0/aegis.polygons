@@ -2,7 +2,7 @@
 
 This R-library serves three functions:
 
-- A front end to save/load polygons stored as Rdata or RDS files with labels conforming to aegis.* expectations. 
+- A front end to save/load polygons stored as rdata or rdz (qsave-zstd-compressed) files with labels conforming to aegis.* expectations. 
 
 - To create polygons (areal units) for use in areal-unit modelling
     
