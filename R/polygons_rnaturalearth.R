@@ -1,5 +1,6 @@
 
-polygons_rnaturalearth = function(  countries= c("United States of America", "Canada"), xlim=c(-80,-40), ylim=c(38, 60) ) {
+polygons_rnaturalearth = function(  countries= c("United States of America", "Canada"), xlim=c(-80,-40), ylim=c(38, 60), 
+scale="large", returnclass="sf" ) {
 
   if (!require("rnaturalearth"))  install.packages("rnaturalearth")
   if (!require("rnaturalearthdata"))  install.packages("rnaturalearthdata")
@@ -18,9 +19,9 @@ polygons_rnaturalearth = function(  countries= c("United States of America", "Ca
     require(sf)
     
     if (is.null(countries)) {
-      out = ne_countries(type = 'countries', returnclass="sf")
+      out = ne_countries(type = "countries", scale=scale, returnclass=returnclass)
     } else {
-      out = ne_states( countries, returnclass="sf" )
+      out = ne_states( countries, scale=scale, returnclass=returnclass )
     }
 
     st_crs(out) = st_crs( "epsg:4326" )
