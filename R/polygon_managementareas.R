@@ -81,7 +81,7 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
     Z = Z[ geo_subset( spatial_domain="snowcrab", Z=Z ), ]
     Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs(shp)  )
     id = st_points_in_polygons( Z, shp )
-    Z = Z[which(!is.na(id)), ]
+    Z = Z[which(id), ]
 
     ZG = st_as_sf( st_make_grid( Z, cellsize=1, what="polygons", square=TRUE ) )
     ZG = st_join(ZG, Z )
