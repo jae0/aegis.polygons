@@ -4,15 +4,12 @@ area_lines.db = function( DS, returntype="list", project_to=st_crs( projection_p
   if (DS=="cfa.regions") {
       
       nafo4Vn  = data.frame( rbind(
-       
-        
         c(-59.866046,47.717237),    
         c(-60.40917,47.035833)
       ))
-
       cfa.nens.23 = data.frame( rbind(
         c(-59.85, 46),
-        c(-58.40, 46)
+        c(-58.0, 46)
       ))
       cfa.23.24 = data.frame( rbind(
         c(-59.065, 43.5),
@@ -26,7 +23,7 @@ area_lines.db = function( DS, returntype="list", project_to=st_crs( projection_p
       ))
 
       names( nafo4Vn ) =   c("lon", "lat")
-      names( cfa.nens.23 ) =   c("lon", "lat")
+      names( cfa.nens.23 ) = c("lon", "lat")
       names( cfa.23.24 ) =  c("lon", "lat") 
       names( cfa.4x.24 ) = c("lon", "lat")
 
