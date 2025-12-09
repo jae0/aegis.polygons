@@ -78,7 +78,7 @@ polygon_managementareas = function( species="maritimes", area="cfaall", redo=FAL
 
     pB = bathymetry_parameters( spatial_domain="snowcrab", project_class="stmv" )
     Z = bathymetry_db( p=pB, DS="complete" )
-    Z = Z[ geo_subset( spatial_domain="snowcrab", Z=Z ), ]
+    Z = Z[ filter_by_spatial_domain( spatial_domain="snowcrab", Z=Z ), ]
     Z = st_as_sf( Z[, c("plon", "plat", "z")], coords= c("plon", "plat"), crs=st_crs(shp)  )
     inside = st_points_in_polygons( Z, shp, method="sp::point.in.polygon" )
     Z = Z[which(inside), ]
