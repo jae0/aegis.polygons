@@ -557,6 +557,8 @@ areal_units = function(
   }
 
   # update counts
+  sppoly = st_make_valid(sppoly)
+  
   sppoly$internal_id = 1:nrow(sppoly)
   row.names( sppoly) = sppoly$internal_id
   cdd = setDT( st_drop_geometry( constraintdata ) )
@@ -566,7 +568,9 @@ areal_units = function(
     
   sppoly$internal_id = NULL
 
-    # ------------------------------------------------
+  # ------------------------------------------------
+
+  sppoly = st_make_valid(sppoly)  # once more, just in case
   sppoly$au_sa_km2 = st_area( sppoly )
 
   if (!exists("strata_to_keep", sppoly) ) sppoly$strata_to_keep = TRUE  # flag for aggregations
