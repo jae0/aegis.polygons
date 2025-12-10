@@ -180,7 +180,8 @@ areal_units = function(
   }
 
   if (! "sf" %in% class(xydata) ) {
-    xydata = st_as_sf ( xydata, coords= c('lon', 'lat'), crs = st_crs(projection_proj4string("lonlat_wgs84")) )
+    xydata = st_as_sf ( xydata, coords= c('lon', 'lat'))
+    st_crs(xydata) = st_crs(projection_proj4string("lonlat_wgs84")) 
   }
   xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
 
@@ -214,14 +215,12 @@ areal_units = function(
       boundary = st_cast(boundary, "POLYGON" )
       boundary = st_make_valid(boundary)
  
-      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
-      xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
-
       data_boundary = (
-        st_zm(xyd)
+        st_combine(xydata)
+        %>% st_concave_hull( ratio=0.01, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=spbuffer )
+        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
         %>% st_union()
         %>% st_make_valid()
       )
@@ -233,14 +232,12 @@ areal_units = function(
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
-      xyd = st_multipoint( st_coordinates(xyd)[,c("X", "Y")])
-
       boundary = (
-        st_zm(xyd)
+        st_combine(xydata)
+        %>% st_concave_hull( ratio=0.01, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=spbuffer)
+        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
         %>% st_union()
         %>% st_make_valid()
       )
@@ -251,13 +248,12 @@ areal_units = function(
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
-        %>% st_simplify()
-        %>% st_buffer(inputdata_spatial_discretization_planar_km )
+        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
         %>% st_union()
         %>% st_cast("MULTIPOLYGON")
     )
 
-    boundary = st_difference( boundary, coast)
+    boundary = st_difference( boundary, coast )
     coast = NULL
 
     
