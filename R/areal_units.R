@@ -45,6 +45,9 @@ areal_units = function(
 
   require(spdep)
 
+  sf_use_s2(FALSE)  # forces a fix .. a problem in some polygons
+
+
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
   # hull (boundary) related:
@@ -112,7 +115,10 @@ areal_units = function(
     if ( file.exists(areal_units_fn_full) ) {
       sppoly = read_write_fast(areal_units_fn_full)
       if (!is.null(sppoly)) {
-        if ( !is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
+        if ( !is.null( return_crs )) {
+          sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
+        }
+        sppoly = st_make_valid(sppoly)  # once more, just in case
         if ( !is.null( sppoly ) ) return(sppoly)
       }
     }
@@ -570,7 +576,6 @@ areal_units = function(
 
   # ------------------------------------------------
 
-  sppoly = st_make_valid(sppoly)  # once more, just in case
   sppoly$au_sa_km2 = st_area( sppoly )
 
   if (!exists("strata_to_keep", sppoly) ) sppoly$strata_to_keep = TRUE  # flag for aggregations
@@ -592,7 +597,11 @@ areal_units = function(
   attr(sppoly, "areal_units_constraint") = areal_units_constraint
   attr(sppoly, "areal_units_constraint_nmin") = areal_units_constraint_nmin
 
-  if (!is.null( return_crs )) sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
+  if (!is.null( return_crs )) {
+    sppoly=st_transform(sppoly, crs=st_crs(return_crs) )
+    sppoly = st_make_valid(sppoly)  # once more, just in case
+  }
+  
   read_write_fast(sppoly, file=areal_units_fn_full)
   message( "Saved polygons as: ", areal_units_fn_full )
 
