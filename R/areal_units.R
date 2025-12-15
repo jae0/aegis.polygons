@@ -49,7 +49,6 @@ areal_units = function(
   p = parameters_add(p, list(...) ) # add passed args to parameter list, priority to args
 
   # hull (boundary) related:
-  if (exists("spbuffer", p)) spbuffer = p$spbuffer
   if (exists("hull_boundary_ratio", p)) hull_boundary_ratio = p$hull_boundary_ratio
   if (exists("hull_noise", p)) hull_noise = p$hull_noise
   if (exists("n_iter_drop", p)) n_iter_drop = p$n_iter_drop
@@ -288,7 +287,7 @@ areal_units = function(
         output_type="polygons",
         resolution=areal_units_resolution_km,
         hull_boundary_ratio = hull_boundary_ratio,
-        hull_lengthscale=spbuffer,  # for rasterization .. not used if boundary is provided
+        hull_lengthscale=areal_units_resolution_km * 10,   # for rasterization .. not used if boundary is provided
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         areal_units_constraint_nmin=areal_units_constraint_nmin,
         tus=p$tus,
