@@ -288,7 +288,6 @@ areal_units = function(
         output_type="polygons",
         resolution=areal_units_resolution_km,
         hull_boundary_ratio = hull_boundary_ratio,
-        spbuffer=spbuffer,
         hull_lengthscale=spbuffer,  # for rasterization .. not used if boundary is provided
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         areal_units_constraint_nmin=areal_units_constraint_nmin,
