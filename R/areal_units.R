@@ -236,11 +236,16 @@ areal_units = function(
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      boundary = aegis_envelope( 
-        xy = st_geometry(xydata),  
-        xy_crs = st_crs(areal_units_proj4string_planar_km),
-        hull_boundary_ratio = hull_boundary_ratio
-      )
+   
+      boundary = (
+        st_combine(xydata)
+        %>% st_concave_hull( ratio=hull_boundary_ratio, allow_holes=FALSE )  i
+        %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
+        %>% st_cast("POLYGON" )
+        %>% st_simplify(dTolerance=areal_units_resolution_km)
+        %>% st_union()
+        %>% st_make_valid()
+      )    
  
   }
  
