@@ -14,6 +14,7 @@ areal_units = function(
   n_iter_drop=1, 
   hull_noise=1e-4, 
   lenprob=0.9,
+  boundary_ratio=0.1,
   duplications_action="union",  
   areal_units_timeperiod=NULL, 
   verbose=FALSE, 
@@ -31,7 +32,8 @@ areal_units = function(
     rastermethod="sf"
     xydata=NULL
     lenprob = 0.9
-    duplications_action="union"
+    boundary_ratio=0.1,
+     duplications_action="union"
     areal_units_timeperiod=NULL
     areal_units_fn_full = NULL
     areal_units_directory=NULL
@@ -226,7 +228,7 @@ areal_units = function(
         %>% st_concave_hull( ratio=0.01, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
+        %>% st_simplify(dTolerance=areal_units_resolution_km)
         %>% st_union()
         %>% st_make_valid()
       )
@@ -240,10 +242,10 @@ areal_units = function(
       message( "Determining areal unit domain boundary from input: xydata") 
       boundary = (
         st_combine(xydata)
-        %>% st_concave_hull( ratio=0.01, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
+        %>% st_concave_hull( ratio=boundary_ratio, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
+        %>% st_simplify(dTolerance=areal_units_resolution_km)
         %>% st_union()
         %>% st_make_valid()
       )
@@ -254,7 +256,7 @@ areal_units = function(
     coast = (
         coastline_db( p=p, DS="eastcoast_gadm" )
         %>% st_transform( st_crs( areal_units_proj4string_planar_km ))
-        %>% st_simplify(dTolerance=inputdata_spatial_discretization_planar_km)
+        %>% st_simplify(dTolerance=areal_units_resolution_km)
         %>% st_union()
         %>% st_cast("MULTIPOLYGON")
     )
