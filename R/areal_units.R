@@ -19,6 +19,7 @@ areal_units = function(
   return_crs=NULL, 
   count_time=TRUE, 
   respect_spatial_domain=TRUE, 
+  additional_features=NULL,
   ... ) {
 
   if (0) {
@@ -40,6 +41,35 @@ areal_units = function(
     count_time=TRUE 
     respect_spatial_domain=TRUE
   }
+
+
+  if (plotit) {
+
+    plt = ggplot() 
+
+    if (!is.null(sppoly)) {
+      sppoly = st_transform(sppoly, st_crs( projection_proj4string("lonlat_wgs84") ))
+      sppoly$dummyvar = ""
+      plt = plt + geom_sf( data=sppoly, aes(), colour="slateblue", lwd=0.2, alpha=0.7)  
+    }
+  
+    if (!is.null(xydata)) {
+      xydata = st_as_sf ( xydata, coords= c('lon', 'lat'))
+      st_crs(xydata) = st_crs(projection_proj4string("lonlat_wgs84")) 
+      # xydata = st_transform( xydata, st_crs( projection_proj4string("lonlat_wgs84") ))
+      plt = plt + geom_sf( data=xydata, aes(), colour="lightorange", alpha=0.9, size=0.9 ) 
+    }
+ 
+
+    if (!is.null( additional_features )) {
+      plt = plt + additional_features 
+    }    
+
+    bb = st_bbox(sppoly) 
+    plt = plt + coord_sf(xlim=bb[c("xmin", "xmax") ] , ylim=bb[c("ymin", "ymax") ], expand = FALSE )
+
+    return(plt)
+  } 
 
   require(spdep)
 
@@ -105,7 +135,32 @@ areal_units = function(
   }
 
   dir.create( areal_units_directory, showWarnings = FALSE, recursive = TRUE )
+
+ 
+  if (is.null(xydata)) {
+    if (exists("areal_units_xydata", p)) {
+       assign("xydata", eval(parse(text=p$areal_units_xydata) ) )
+    } else {
+       message( "To create areal units, xydata is required.")
+       stop()
+    }
+  }
+
+  if (!exists("lon", xydata)) {
+    if (! "sf" %in% class(xydata) ) {
+      stop( "areal_units requires 'lon', 'lat', and possibly 'yr' or that it be an 'sf' object")
+    }
+  }
+
+  if (! "sf" %in% class(xydata) ) {
+    xydata = st_as_sf ( xydata, coords= c('lon', 'lat'))
+    st_crs(xydata) = st_crs(projection_proj4string("lonlat_wgs84")) 
+  }
   
+  xydata = st_transform( xydata, crs=st_crs( areal_units_proj4string_planar_km ))
+
+
+
   sppoly = NULL
 
   if (!redo) {
@@ -167,28 +222,6 @@ areal_units = function(
 
 
 
-  # ------------------------------------------------
-  if (is.null(xydata)) {
-    if (exists("areal_units_xydata", p)) {
-       assign("xydata", eval(parse(text=p$areal_units_xydata) ) )
-    } else {
-       message( "To create areal units, xydata is required.")
-       stop()
-    }
-  }
-  if (!exists("lon", xydata)) {
-    if (! "sf" %in% class(xydata) ) {
-      stop( "areal_units requires 'lon', 'lat', and possibly 'yr' or that it be an 'sf' object")
-    }
-  }
-
-  if (! "sf" %in% class(xydata) ) {
-    xydata = st_as_sf ( xydata, coords= c('lon', 'lat'))
-    st_crs(xydata) = st_crs(projection_proj4string("lonlat_wgs84")) 
-  }
-  xydata = st_transform( xydata, st_crs( areal_units_proj4string_planar_km ))
-
-
   boundary = NULL
 
   if ( areal_units_type %in% c( "stratanal_polygons_pre2014", "stratanal_polygons", "groundfish_strata", "stratanal_polygons_post2014") ) {
@@ -220,7 +253,7 @@ areal_units = function(
  
       data_boundary = (
         st_combine(xydata)
-        %>% st_concave_hull( ratio=0.01, allow_holes=FALSE ) 
+        %>% st_concave_hull( ratio=hull_boundary_ratio, allow_holes=FALSE ) 
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
         %>% st_simplify(dTolerance=areal_units_resolution_km)
@@ -287,7 +320,7 @@ areal_units = function(
         output_type="polygons",
         resolution=areal_units_resolution_km,
         hull_boundary_ratio = hull_boundary_ratio,
-        hull_lengthscale=areal_units_resolution_km * 10,   # for rasterization .. not used if boundary is provided
+        hull_lengthscale=areal_units_resolution_km * 10,   # for rasterization  
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
         areal_units_constraint_nmin=areal_units_constraint_nmin,
         tus=p$tus,
@@ -604,7 +637,6 @@ areal_units = function(
   read_write_fast(sppoly, file=areal_units_fn_full)
   message( "Saved polygons as: ", areal_units_fn_full )
 
-  if (plotit) plot(sppoly["au_sa_km2"])
    
   return( sppoly )
 
