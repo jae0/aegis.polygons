@@ -10,10 +10,8 @@ areal_units = function(
   use_stmv_solution=TRUE, 
   rastermethod="sf",  
   xydata=NULL, 
-  spbuffer=5, 
   n_iter_drop=1, 
   hull_noise=1e-4, 
-  lenprob=0.9,
   hull_boundary_ratio=0.1,
   duplications_action="union",  
   areal_units_timeperiod=NULL, 
@@ -28,10 +26,8 @@ areal_units = function(
     sa_threshold_km2=0
     redo=FALSE
     use_stmv_solution=TRUE
-    spbuffer=5
     rastermethod="sf"
     xydata=NULL
-    lenprob = 0.9
     hull_boundary_ratio=0.1
      duplications_action="union"
     areal_units_timeperiod=NULL
@@ -55,7 +51,6 @@ areal_units = function(
   # hull (boundary) related:
   if (exists("spbuffer", p)) spbuffer = p$spbuffer
   if (exists("hull_boundary_ratio", p)) hull_boundary_ratio = p$hull_boundary_ratio
-  if (exists("lenprob", p)) lenprob = p$lenprob
   if (exists("hull_noise", p)) hull_noise = p$hull_noise
   if (exists("n_iter_drop", p)) n_iter_drop = p$n_iter_drop
   if (exists("sa_threshold_km2", p)) sa_threshold_km2 = p$sa_threshold_km2
@@ -226,7 +221,7 @@ areal_units = function(
  
       data_boundary = (
         st_combine(xydata)
-        %>% st_concave_hull( ratio=0.01, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
+        %>% st_concave_hull( ratio=0.01, allow_holes=FALSE ) 
         %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
         %>% st_cast("POLYGON" )
         %>% st_simplify(dTolerance=areal_units_resolution_km)
