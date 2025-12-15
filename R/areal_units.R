@@ -57,7 +57,7 @@ areal_units = function(
       xydata = st_as_sf ( xydata, coords= c('lon', 'lat'))
       st_crs(xydata) = st_crs(projection_proj4string("lonlat_wgs84")) 
       # xydata = st_transform( xydata, st_crs( projection_proj4string("lonlat_wgs84") ))
-      plt = plt + geom_sf( data=xydata, aes(), colour="lightorange", alpha=0.9, size=0.9 ) 
+      plt = plt + geom_sf( data=xydata, aes(), colour="orange", alpha=0.5, size=0.9 ) 
     }
  
 
