@@ -14,7 +14,7 @@ areal_units = function(
   n_iter_drop=1, 
   hull_noise=1e-4, 
   lenprob=0.9,
-  boundary_ratio=0.1,
+  hull_boundary_ratio=0.1,
   duplications_action="union",  
   areal_units_timeperiod=NULL, 
   verbose=FALSE, 
@@ -32,7 +32,7 @@ areal_units = function(
     rastermethod="sf"
     xydata=NULL
     lenprob = 0.9
-    boundary_ratio=0.1
+    hull_boundary_ratio=0.1
      duplications_action="union"
     areal_units_timeperiod=NULL
     areal_units_fn_full = NULL
@@ -54,6 +54,7 @@ areal_units = function(
 
   # hull (boundary) related:
   if (exists("spbuffer", p)) spbuffer = p$spbuffer
+  if (exists("hull_boundary_ratio", p)) hull_boundary_ratio = p$hull_boundary_ratio
   if (exists("lenprob", p)) lenprob = p$lenprob
   if (exists("hull_noise", p)) hull_noise = p$hull_noise
   if (exists("n_iter_drop", p)) n_iter_drop = p$n_iter_drop
@@ -240,17 +241,14 @@ areal_units = function(
   
   if (is.null(boundary)) {
       message( "Determining areal unit domain boundary from input: xydata") 
-      boundary = (
-        st_combine(xydata)
-        %>% st_concave_hull( ratio=boundary_ratio, allow_holes=FALSE )  #      xyd = non_convex_hull( xydata, lengthscale=spbuffer, lenprob=lenprob )  
-        %>% st_sfc(crs=st_crs(areal_units_proj4string_planar_km))
-        %>% st_cast("POLYGON" )
-        %>% st_simplify(dTolerance=areal_units_resolution_km)
-        %>% st_union()
-        %>% st_make_valid()
+      boundary = aegis_envelope( 
+        xy = xydata,  
+        xy_crs = st_crs(areal_units_proj4string_planar_km),
+        hull_boundary_ratio = hull_boundary_ratio
       )
  
   }
+ 
     #  remove.coastline
     require(aegis.coastline)
     coast = (
@@ -289,6 +287,7 @@ areal_units = function(
         boundary=boundary,
         output_type="polygons",
         resolution=areal_units_resolution_km,
+        hull_boundary_ratio = hull_boundary_ratio,
         spbuffer=spbuffer,
         hull_lengthscale=spbuffer,  # for rasterization .. not used if boundary is provided
         areal_units_constraint_ntarget=areal_units_constraint_ntarget,
