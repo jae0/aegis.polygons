@@ -383,12 +383,7 @@ areal_units = function(
     xydata = NULL
   
     # count
-    sppoly$internal_id = 1:nrow(sppoly)
-    row.names( sppoly) = sppoly$internal_id
-    cdd = setDT( st_drop_geometry( constraintdata ) )
-    cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
-    cdd = cdd[,.(npts=.N), .(internal_id) ]
-    sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
+    sppoly$npts = polygon_tabulate( sppoly, constraintdata ) 
 
     uu = which( !is.finite(sppoly$npts) )
     if ( length(uu) > 0 ) sppoly$npts[uu] = 0
@@ -455,41 +450,34 @@ areal_units = function(
     message( "Last pass: Force dropping of low count locations:" )
     # update counts: iterativ, so do it a few times
     for (i in 1:n_iter_drop) {
-
-      uu = jitter( st_coordinates(st_centroid(sppoly))[,c("X", "Y")] )  # jitter noise to keep from getting stuck
-      sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
-      sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
  
-      sppoly$internal_id = 1:nrow(sppoly)
-      row.names( sppoly) = sppoly$internal_id
-      cdd = setDT( st_drop_geometry( constraintdata ) )
-      cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
-      cdd = cdd[,.(npts=.N), .(internal_id) ]
-      sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
-      sppoly = st_make_valid(sppoly)
-
-      # drop 
-      o =  which( !is.finite(sppoly$npts ) | sppoly$npts < areal_units_constraint_nmin )
+      # centroids via voronoi
+      sppoly = tessellate( 
+        st_coordinates(st_centroid(sppoly))[,c("X", "Y")], 
+        outformat="sf", 
+        crs=st_crs( sppoly ), 
+        boundary=boundary,
+        jitter=TRUE 
+      ) 
+ 
+      sppoly$npts = polygon_tabulate( sppoly, constraintdata ) 
+      o =  which( !is.finite(sppoly$npts ) | sppoly$npts < areal_units_constraint_nmin )      # drop 
       if (length(o)==0) break()
-
       sppoly = sppoly[ -o, ]
+      sppoly = st_make_valid(sppoly)
 
     } 
 
-    # final update      
-
-    uu =  st_coordinates(st_centroid(sppoly))[,c("X", "Y")] 
-
-    sppoly = tessellate( uu, outformat="sf", crs=st_crs( sppoly )) # centroids via voronoi
-    sppoly = st_sf( st_intersection( sppoly, boundary ) ) # crop
-   
-    sppoly$internal_id = 1:nrow(sppoly)
-    row.names( sppoly) = sppoly$internal_id
-    cdd = setDT( st_drop_geometry( constraintdata ) )
-    cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
-    cdd = cdd[,.(npts=.N), .(internal_id) ]
-    sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
-    sppoly$internal_id = NULL
+    # final tesselation and update of counts     
+    sppoly = tessellate( 
+      st_coordinates(st_centroid(sppoly))[,c("X", "Y")], 
+      outformat="sf", 
+      crs=st_crs( sppoly ), 
+      boundary=boundary,
+      jitter=TRUE 
+    ) 
+    
+    sppoly$npts = polygon_tabulate( sppoly, constraintdata ) 
     sppoly = st_make_valid(sppoly)
  
     message( "Applying additional constraints leaves: ",  nrow(sppoly), " areal units." )
@@ -596,15 +584,8 @@ areal_units = function(
 
   # update counts
   sppoly = st_make_valid(sppoly)
-  
-  sppoly$internal_id = 1:nrow(sppoly)
-  row.names( sppoly) = sppoly$internal_id
-  cdd = setDT( st_drop_geometry( constraintdata ) )
-  cdd$internal_id = st_points_in_polygons( constraintdata, sppoly, varname="internal_id" )
-  cdd = cdd[,.(npts=.N), .(internal_id) ]
-  sppoly$npts = cdd$npts[ match( as.character(sppoly$internal_id),  as.character(cdd$internal_id) )]
-    
-  sppoly$internal_id = NULL
+ 
+  sppoly$npts = polygon_tabulate( sppoly, constraintdata ) 
 
   # ------------------------------------------------
 
