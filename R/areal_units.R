@@ -399,11 +399,12 @@ areal_units = function(
 
       # try to join to adjacent au's
       todrop = which( sppoly$npts < areal_units_constraint_nmin )
-      if (length(todrop) == 0 ) break()
-
-      sppoly$already_dropped = FALSE
-      sppoly$count_is_ok = TRUE
-      sppoly$count_is_ok[todrop] = FALSE
+      
+      if (length(todrop) > 0 )  {
+        sppoly$already_dropped = FALSE
+        sppoly$count_is_ok = TRUE
+        sppoly$count_is_ok[todrop] = FALSE
+      }
 
       NB_graph = poly2nb(sppoly, row.names=sppoly$internal_id, queen=TRUE, snap=areal_units_resolution_km*3 )  
       message( "Joining adjacent areal units to obtain target minimum number of data points in a cell: ", areal_units_constraint_nmin )
@@ -439,6 +440,8 @@ areal_units = function(
           }
         }
       }
+    
+    
       # final check
       toofew = which( sppoly$npts < areal_units_constraint_nmin )
       if (length(toofew) > 0) sppoly$already_dropped[toofew] = TRUE
